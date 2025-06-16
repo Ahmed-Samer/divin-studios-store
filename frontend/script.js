@@ -10,30 +10,77 @@ if (toggleBtn) {
 // --- متغير عالمي لتخزين كل المنتجات بعد جلبها ---
 let allProducts = [];
 
-// --- دوال سلة المشتريات (تم إضافة دالة جديدة) ---
-function showToast(message) { const toastContainer = document.getElementById('toast-container'); if (!toastContainer) return; const toast = document.createElement('div'); toast.classList.add('toast'); toast.textContent = message; toastContainer.appendChild(toast); setTimeout(() => { toast.remove(); }, 4000); }
-function updateCartIcon() { const cart = JSON.parse(localStorage.getItem('cart')) || []; const cartCountElements = document.querySelectorAll('.cart-count'); let totalItems = 0; cart.forEach(item => totalItems += item.quantity); cartCountElements.forEach(el => { el.textContent = totalItems; }); }
-function addToCart(productId, quantity, size) { if (!size) { alert('من فضلك اختر المقاس أولاً.'); return; } let cart = JSON.parse(localStorage.getItem('cart')) || []; const existingProductIndex = cart.findIndex(item => item.id == productId && item.size == size); if (existingProductIndex > -1) { cart[existingProductIndex].quantity += quantity; } else { cart.push({ id: productId, quantity: quantity, size: size }); } localStorage.setItem('cart', JSON.stringify(cart)); updateCartIcon(); showToast(`تمت إضافة ${quantity} قطعة للسلة بنجاح ✔️`); }
-function removeFromCart(cartItemId) { let cart = JSON.parse(localStorage.getItem('cart')) || []; cart = cart.filter(item => (item.id + '-' + item.size) !== cartItemId); localStorage.setItem('cart', JSON.stringify(cart)); displayCartItems(); }
+// --- دوال سلة المشتريات ---
+function showToast(message) {
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) return;
+    const toast = document.createElement('div');
+    toast.classList.add('toast');
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+    setTimeout(() => {
+        toast.remove();
+    }, 4000);
+}
 
-// --- الدالة الجديدة: تغيير الكمية من السلة ---
+function updateCartIcon() {
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    const cartCountElements = document.querySelectorAll('.cart-count');
+    let totalItems = 0;
+    cart.forEach(item => totalItems += item.quantity);
+    cartCountElements.forEach(el => {
+        el.textContent = totalItems;
+    });
+}
+
+function addToCart(productId, quantity, size) {
+    if (!size) {
+        alert('من فضلك اختر المقاس أولاً.');
+        return;
+    }
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    const existingProductIndex = cart.findIndex(item => item.id == productId && item.size == size);
+    if (existingProductIndex > -1) {
+        cart[existingProductIndex].quantity += quantity;
+    } else {
+        cart.push({ id: productId, quantity: quantity, size: size });
+    }
+    localStorage.setItem('cart', JSON.stringify(cart));
+    updateCartIcon();
+    showToast(`تمت إضافة ${quantity} قطعة للسلة بنجاح ✔️`);
+}
+
+function removeFromCart(cartItemId) {
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    cart = cart.filter(item => (item.id + '-' + item.size) !== cartItemId);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    displayCartItems();
+}
+
 function changeCartItemQuantity(cartItemId, change) {
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
     const itemIndex = cart.findIndex(item => (item.id + '-' + item.size) === cartItemId);
-
     if (itemIndex > -1) {
         cart[itemIndex].quantity += change;
-        // لو الكمية وصلت لصفر، احذف المنتج
         if (cart[itemIndex].quantity <= 0) {
             cart.splice(itemIndex, 1);
         }
     }
     localStorage.setItem('cart', JSON.stringify(cart));
-    displayCartItems(); // أعد رسم السلة بالكامل لتحديث كل شيء
+    displayCartItems();
 }
 
 // --- دالة لرسم كروت المنتجات في الصفحة الرئيسية ---
-function renderProducts(productsToRender) { const productGrid = document.querySelector('.product-grid'); if (!productGrid) return; productGrid.innerHTML = ''; if (productsToRender.length === 0) { productGrid.innerHTML = `<div class="empty-cart-container" style="display:block; grid-column: 1 / -1; text-align: center;"><h2>لا توجد منتجات تطابق بحثك.</h2><p>حاول استخدام كلمات بحث مختلفة.</p></div>`; return; } productsToRender.forEach(product => { const cardHTML = `
+function renderProducts(productsToRender) {
+    const productGrid = document.querySelector('.product-grid');
+    if (!productGrid) return;
+    productGrid.innerHTML = '';
+    if (productsToRender.length === 0) {
+        productGrid.innerHTML = `<div class="empty-cart-container" style="display:block; grid-column: 1 / -1; text-align: center;"><h2>لا توجد منتجات تطابق بحثك.</h2><p>حاول استخدام كلمات بحث مختلفة.</p></div>`;
+        return;
+    }
+    productsToRender.forEach(product => {
+        const cardHTML = `
             <div class="product-card">
                 <div class="card-image"> <img src="${product.images[0]}" alt="${product.name}"> </div>
                 <div class="card-content">
@@ -42,9 +89,12 @@ function renderProducts(productsToRender) { const productGrid = document.querySe
                     <a href="product.html?id=${product.id}" class="btn">عرض التفاصيل</a>
                 </div>
             </div>
-        `; productGrid.innerHTML += cardHTML; }); }
+        `;
+        productGrid.innerHTML += cardHTML;
+    });
+}
 
-// --- دالة لعرض المنتجات في صفحة السلة (تم تعديلها) ---
+// --- دالة لعرض المنتجات في صفحة السلة ---
 function displayCartItems() {
     const cartPageContainer = document.querySelector('.cart-page-container');
     if (!cartPageContainer) return;
@@ -54,14 +104,13 @@ function displayCartItems() {
     } else {
         cartPageContainer.classList.remove('cart-is-empty');
         const cartItemsContainer = document.querySelector('.cart-items-list');
-        cartItemsContainer.innerHTML = ''; 
+        cartItemsContainer.innerHTML = '';
         let totalPrice = 0;
         cart.forEach(cartItem => {
-            const product = allProducts.find(p => p.id == cartItem.id); 
+            const product = allProducts.find(p => p.id == cartItem.id);
             if (product) {
                 totalPrice += product.price * cartItem.quantity;
                 const cartItemId = `${product.id}-${cartItem.size}`;
-                // --- التعديل هنا: إضافة أزرار التحكم في الكمية ---
                 const cartItemHTML = `
                     <div class="cart-item">
                         <img src="${product.images[0]}" alt="${product.name}" class="cart-item-image">
@@ -81,8 +130,6 @@ function displayCartItems() {
             }
         });
         document.getElementById('cart-total-price').textContent = `${totalPrice} ج.م`;
-        
-        // --- ربط الأحداث بالأزرار الجديدة ---
         document.querySelectorAll('.remove-from-cart-btn').forEach(button => { button.addEventListener('click', (event) => { removeFromCart(event.target.dataset.id); }); });
         document.querySelectorAll('.plus-btn').forEach(button => { button.addEventListener('click', (event) => { changeCartItemQuantity(event.target.dataset.id, 1); }); });
         document.querySelectorAll('.minus-btn').forEach(button => { button.addEventListener('click', (event) => { changeCartItemQuantity(event.target.dataset.id, -1); }); });
@@ -122,7 +169,8 @@ function validateForm() { let isValid = true; const fullName = document.getEleme
 // --- الدالة الرئيسية التي تشغل كل شيء ---
 async function initializeStore() {
     try {
-        const response = await fetch('http://localhost:3000/api/products');
+        // التعديل هنا: اللينك بقى نسبي للـ API عشان يشتغل على أي استضافة
+        const response = await fetch('/api/products');
         if (!response.ok) { throw new Error('Network response was not ok'); }
         allProducts = await response.json();
         runPageSpecificLogic();
