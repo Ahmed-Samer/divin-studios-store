@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إتمام الشراء - Zantiva Store</title>
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <header class="main-header">
+        <nav class="navbar">
+            <div class="nav-section right">
+                <ul class="expanded-links">
+                    <li><a href="index.html?category=رجالي">رجالي</a></li>
+                    <li><a href="index.html?category=نسائي">نسائي</a></li>
+                    <li><a href="index.html?category=اطفالي">أطفال</a></li>
+                    <li><a href="about.html">عن المتجر</a></li>
+                    <li><a href="contact.html">تواصل معنا</a></li>
+                </ul>
+                <button class="menu-toggle-btn">الأقسام ☰</button>
+            </div>
+            <div class="nav-section middle">
+                <a href="index.html" class="logo">Zantiva Store</a>
+            </div>
+            <div class="nav-section left">
+                <div class="search-container">
+                    <input type="search" id="search-bar" placeholder="ابحث عن منتج...">
+                </div>
+                <a href="cart.html" class="cart-link">
+                    <span class="cart-icon">🛒</span>
+                    <span class="cart-count">0</span>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="page-content">
+        <div class="checkout-page-container">
+            <h1>إتمام الشراء</h1>
+            <div class="checkout-layout">
+                <div class="customer-details">
+                    <h2>تفاصيل الشحن</h2>
+                    <form class="checkout-form" id="checkout-form" novalidate>
+                        <div class="form-group">
+                            <label for="full-name">الاسم بالكامل</label>
+                            <input type="text" id="full-name" name="full-name" >
+                            <span class="error-message"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">رقم الهاتف</label>
+                            <input type="tel" id="phone" name="phone" >
+                            <span class="error-message"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="address">العنوان بالتفصيل</label>
+                            <textarea id="address" name="address" rows="4" ></textarea>
+                            <span class="error-message"></span>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="governorate">المحافظة</label>
+                                <input type="text" id="governorate" name="governorate" >
+                                <span class="error-message"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="city">المدينة</label>
+                                <input type="text" id="city" name="city" >
+                                <span class="error-message"></span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="order-summary">
+                    <h2>ملخص الطلب</h2>
+                    <div id="summary-items-container" class="summary-items">
+                    </div>
+                    <div class="summary-total">
+                        <span>الإجمالي</span>
+                        <span id="summary-total-price">0 ج.م</span>
+                    </div>
+                    <button type="submit" form="checkout-form" class="confirm-order-btn">تأكيد الطلب</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="social-links">
+                <a href="#">فيسبوك</a>
+                <a href="#">انستجرام</a>
+                <a href="#">تويتر</a>
+            </div>
+            <p class="copyright">&copy; 2025 Zantiva Store. كل الحقوق محفوظة.</p>
+        </div>
+    </footer>
+
+    <div id="toast-container"></div>
+    <script src="script.js"></script>
+</body>
+</html>

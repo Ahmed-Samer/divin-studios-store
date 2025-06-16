@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تفاصيل المنتج - Zantiva Store</title>
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <header class="main-header">
+        <nav class="navbar">
+            <div class="nav-section right">
+                <ul class="expanded-links">
+                    <li><a href="index.html?category=رجالي">رجالي</a></li>
+                    <li><a href="index.html?category=نسائي">نسائي</a></li>
+                    <li><a href="index.html?category=اطفالي">أطفال</a></li>
+                    <li><a href="about.html">عن المتجر</a></li>
+                    <li><a href="contact.html">تواصل معنا</a></li>
+                </ul>
+                <button class="menu-toggle-btn">الأقسام ☰</button>
+            </div>
+            <div class="nav-section middle">
+                <a href="index.html" class="logo">Zantiva Store</a>
+            </div>
+            <div class="nav-section left">
+                <div class="search-container">
+                    <input type="search" id="search-bar" placeholder="ابحث عن منتج...">
+                </div>
+                <a href="cart.html" class="cart-link">
+                    <span class="cart-icon">🛒</span>
+                    <span class="cart-count">0</span>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="page-content">
+        <div class="product-detail-layout">
+            <div class="product-image-gallery">
+                <div class="slider-wrapper"></div>
+                <button class="slider-btn prev">&#10094;</button>
+                <button class="slider-btn next">&#10095;</button>
+            </div>
+            <div class="product-info-container">
+                <h1 class="product-title-large">جاري تحميل المنتج...</h1>
+                <p class="product-price-large">...</p>
+                <div class="product-description"><p>جاري تحميل التفاصيل...</p></div>
+                
+                <div class="product-options">
+                    <div class="option-group">
+                        <label>المقاس:</label>
+                        <div class="size-selector">
+                            <button class="size-btn" data-size="S">S</button>
+                            <button class="size-btn" data-size="M">M</button>
+                            <button class="size-btn" data-size="L">L</button>
+                            <button class="size-btn" data-size="XL">XL</button>
+                        </div>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>الكمية:</label>
+                        <div class="quantity-selector">
+                            <button class="quantity-btn" id="minus-btn">-</button>
+                            <input type="number" id="quantity-input" value="1" min="1" readonly>
+                            <button class="quantity-btn" id="plus-btn">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="add-to-cart-btn">أضف إلى السلة</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="social-links">
+                <a href="#">فيسبوك</a>
+                <a href="#">انستجرام</a>
+                <a href="#">تويتر</a>
+            </div>
+            <p class="copyright">&copy; 2025 Zantiva Store. كل الحقوق محفوظة.</p>
+        </div>
+    </footer>
+
+    <div id="toast-container"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سلة المشتريات - Zantiva Store</title>
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <header class="main-header">
+        <nav class="navbar">
+            <div class="nav-section right">
+                <ul class="expanded-links">
+                    <li><a href="index.html?category=رجالي">رجالي</a></li>
+                    <li><a href="index.html?category=نسائي">نسائي</a></li>
+                    <li><a href="index.html?category=اطفالي">أطفال</a></li>
+                    <li><a href="about.html">عن المتجر</a></li>
+                    <li><a href="contact.html">تواصل معنا</a></li>
+                </ul>
+                <button class="menu-toggle-btn">الأقسام ☰</button>
+            </div>
+            <div class="nav-section middle">
+                <a href="index.html" class="logo">Zantiva Store</a>
+            </div>
+            <div class="nav-section left">
+                <div class="search-container">
+                    <input type="search" id="search-bar" placeholder="ابحث عن منتج...">
+                </div>
+                <a href="cart.html" class="cart-link">
+                    <span class="cart-icon">🛒</span>
+                    <span class="cart-count">0</span>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="page-content">
+        <div class="cart-page-container">
+            <h1>سلة المشتريات</h1>
+            <div class="empty-cart-container">
+                <div class="empty-cart-icon">🛒</div>
+                <h2>سلتك فارغة!</h2>
+                <p>يبدو أنك لم تقم بإضافة أي منتجات بعد. تصفح منتجاتنا الرائعة وابدأ التسوق الآن!</p>
+                <a href="index.html" class="btn">ابدأ التسوق</a>
+            </div>
+            <div class="cart-layout">
+                <div class="cart-items-list">
+                    </div>
+                <div class="cart-summary">
+                    <h2>ملخص السلة</h2>
+                    <div class="summary-row">
+                        <span>الإجمالي</span>
+                        <span id="cart-total-price">0 ج.م</span>
+                    </div>
+                    <a href="checkout.html" class="checkout-btn">إتمام الشراء</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="social-links">
+                <a href="#">فيسبوك</a>
+                <a href="#">انستجرام</a>
+                <a href="#">تويتر</a>
+            </div>
+            <p class="copyright">&copy; 2025 Zantiva Store. كل الحقوق محفوظة.</p>
+        </div>
+    </footer>
+
+    <div id="toast-container"></div>
+    <script src="script.js"></script>
+</body>
+</html>
