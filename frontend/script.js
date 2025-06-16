@@ -42,7 +42,7 @@ window.addEventListener('click', () => {
 // منع إغلاق القوائم عند الضغط بداخلها
 if(header){
     header.addEventListener('click', (e) => {
-        // لا توقف الانتشار إلا إذا كان الضغط داخل القائمة أو شريط البحث
+        // لا توقف الانتشار إلا إذا كان الضغط داخل القوائم نفسها
         if (e.target.closest('.expanded-links') || e.target.closest('.search-overlay')) {
              e.stopPropagation();
         }
@@ -127,9 +127,7 @@ function renderProducts(productsToRender) {
     productsToRender.forEach(product => {
         const cardHTML = `
             <div class="product-card">
-                <div class="card-image">
-                    <img src="${product.images[0]}" alt="${product.name}">
-                </div>
+                <div class="card-image"> <img src="${product.images[0]}" alt="${product.name}"> </div>
                 <div class="card-content">
                     <h3 class="product-name">${product.name}</h3>
                     <p class="product-price">${product.price} ج.م</p>
@@ -285,7 +283,11 @@ function runPageSpecificLogic() {
         
         function handleSearch(event) {
             const searchTerm = event.target.value.toLowerCase().trim();
-            const filteredBySearch = currentProducts.filter(p => p.name.toLowerCase().includes(searchTerm));
+            // نفلتر من القائمة الحالية المعروضة (بعد الفلترة بالقسم)
+            const baseProducts = category ? allProducts.filter(p => p.category === category) : allProducts;
+            const filteredBySearch = baseProducts.filter(p => 
+                p.name.toLowerCase().includes(searchTerm)
+            );
             renderProducts(filteredBySearch);
         }
 

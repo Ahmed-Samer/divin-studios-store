@@ -3,7 +3,7 @@ const cors = require('cors');
 const path = require('path');
 
 const products = [
-    { id: 1, name: 'Classic Fit Blazer', price: 1200, category: 'رجالي', images: ['/images/classicfitblazer1.jpg', '/images/classicfitblazer2.jpg', '/images/classicfitblazer3.jpg'], description: `خامة: 80% قطن – 20% بوليستر<br>ألوان: أسود، كحلي، رمادي<br>المقاسات: S – M – L – XL<br>مثالي للمناسبات الرسمية والعمل`, sizes: ['S', 'M', 'L', 'XL'] },
+    { id: 1, name: 'Classic Fit Blazer', price: 1200, category: 'رجالي', images: ['/images/classicfitblazer1.jpg', '/images/classicfitblazer2.jpg', '/images/classicfitblazer3.jpg'], description: `خامة: 80% قطن – 20% بوليستر<br>ألوان: أسود، كحلي، رمادي<br>مثالي للمناسبات الرسمية والعمل`, sizes: ['S', 'M', 'L', 'XL'] },
     { id: 2, name: 'Slim Fit Jeans', price: 650, category: 'رجالي', images: ['/images/slimfitjeans1.jpg', '/images/slimfitjeans2.jpg', '/images/slimfitjeans3.jpg'], description: `خامة: دنيم مرن عالي الجودة<br>لون: أزرق غامق<br>جيوب أمامية وخلفية<br>تصميم عصري مريح`, sizes: ['30', '32', '34', '36'] },
     { id: 3, name: 'Cotton Polo Shirt', price: 450, category: 'رجالي', images: ['/images/cottonpoloshirt1.jpg', '/images/cottonpoloshirt2.jpg'], description: `خامة 100% قطن<br>ألوان متعددة: أبيض، أحمر، أزرق، أخضر<br>ياقة بأزرار<br>مناسب للكاجوال أو الشغل`, sizes: ['S', 'M', 'L'] },
     { id: 4, name: 'Hooded Zip Jacket', price: 900, category: 'رجالي', images: ['/images/hoodedzipjacket1.jpg', '/images/hoodedzipjacket2.jpg'], description: `خامة مقاومة للمطر<br>سوستة كاملة + قبعة<br>مبطنة من الداخل<br>مثالي للشتاء والخروجات`, sizes: ['M', 'L', 'XL'] },
@@ -29,7 +29,8 @@ const products = [
 const app = express();
 app.use(cors());
 
-// لا نحتاج لخدمة الملفات الثابتة من هنا الآن، Vercel سيتولى الأمر
+// Vercel يتولى خدمة الملفات الثابتة بناء على ملف vercel.json
+// لذا لم نعد بحاجة لهذا السطر هنا
 // app.use(express.static(path.join(__dirname, '../frontend')));
 
 app.get('/api/products', (req, res) => {
@@ -37,4 +38,5 @@ app.get('/api/products', (req, res) => {
 });
 
 // السطر الأخير والمهم لـ Vercel
+// Vercel سيقوم بتشغيل هذا التطبيق كدالة Serverless
 module.exports = app;
