@@ -31,7 +31,11 @@ body { font-family: Arial, sans-serif; margin: 0; background-color: #0a192f; col
 .cart-item-details { flex-grow: 1; }
 .cart-item-details h3 { margin: 0 0 5px; font-size: 18px; color: #ffffff; }
 .cart-item-details p { margin: 0; color: #ccd6f6; font-size: 14px; }
-.cart-item-price { font-size: 16px; font-weight: bold; margin-left: auto; /* يدفع السعر لأقصى اليمين */ padding: 0 20px; }
+.cart-item-quantity { display: flex; align-items: center; gap: 10px; }
+.cart-item-quantity .quantity-btn { background-color: #2a4162; border: 1px solid #3a5b8e; color: #ccd6f6; width: 30px; height: 30px; font-size: 18px; font-weight: bold; border-radius: 50%; cursor: pointer; transition: background-color 0.3s; display: flex; align-items: center; justify-content: center; }
+.cart-item-quantity .quantity-btn:hover { background-color: #3a5b8e; }
+.cart-item-quantity .quantity-text { font-size: 16px; font-weight: bold; }
+.cart-item-price { font-size: 16px; font-weight: bold; margin-left: auto; padding: 0 20px; }
 .remove-from-cart-btn { background: none; border: none; color: #ff4d4d; font-size: 20px; cursor: pointer; transition: transform 0.2s; }
 .remove-from-cart-btn:hover { transform: scale(1.2); }
 .cart-summary { background-color: #112240; padding: 20px; border-radius: 8px; position: sticky; top: 120px; }
@@ -46,11 +50,6 @@ body { font-family: Arial, sans-serif; margin: 0; background-color: #0a192f; col
 .empty-cart-container p { font-size: 18px; line-height: 1.6; max-width: 500px; margin: 0 auto 30px auto; }
 .cart-page-container.cart-is-empty .cart-layout { display: none; }
 .cart-page-container.cart-is-empty .empty-cart-container { display: block; }
-/* --- الأكواد الجديدة: تصميم أزرار الكمية في السلة --- */
-.cart-item-quantity { display: flex; align-items: center; gap: 10px; }
-.cart-item-quantity .quantity-btn { background-color: #2a4162; border: 1px solid #3a5b8e; color: #ccd6f6; width: 30px; height: 30px; font-size: 18px; font-weight: bold; border-radius: 50%; cursor: pointer; transition: background-color 0.3s; display: flex; align-items: center; justify-content: center; }
-.cart-item-quantity .quantity-btn:hover { background-color: #3a5b8e; }
-.cart-item-quantity .quantity-text { font-size: 16px; font-weight: bold; }
 
 /* --- قسم المنتجات (الصفحة الرئيسية) --- */
 .page-content { padding: 40px 5%; }
@@ -138,5 +137,61 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 .contact-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
 
 /* --- أكواد التصميم المتجاوب (Responsive) --- */
-@media (max-width: 992px) { .product-grid { grid-template-columns: repeat(2, 1fr); } .checkout-layout, .cart-layout, .contact-layout { grid-template-columns: 1fr; } }
-@media (max-width: 768px) { .product-grid { grid-template-columns: 1fr; } .product-detail-layout { grid-template-columns: 1fr; } .navbar { flex-wrap: wrap; } .nav-section.middle { order: -1; width: 100%; flex-basis: 100%; text-align: center; margin-bottom: 10px; transition: none; transform: none !important; } .main-header.menu-is-open .nav-section.middle { transform: none; } .logo { font-size: 28px; } .product-title-large { font-size: 32px; } }
+@media (max-width: 992px) { 
+    .product-grid { grid-template-columns: repeat(2, 1fr); } 
+    .checkout-layout, .cart-layout, .contact-layout { grid-template-columns: 1fr; } 
+}
+
+@media (max-width: 768px) {
+    .product-grid { grid-template-columns: 1fr; }
+    .product-detail-layout { grid-template-columns: 1fr; }
+    .navbar { flex-wrap: wrap; justify-content: space-between; }
+    .nav-section.middle { order: -1; width: 100%; flex-basis: 100%; text-align: center; margin-bottom: 10px; transition: none; transform: none !important; }
+    .main-header.menu-is-open .nav-section.middle { transform: none; }
+    .logo { font-size: 28px; }
+    .product-title-large { font-size: 32px; }
+
+    /* --- التعديلات الجديدة هنا --- */
+    
+    /* 1. تعديل القائمة المنسدلة للموبايل */
+    .expanded-links {
+        position: absolute;
+        top: 75px; /* تحت الهيدر بشوية */
+        left: 5%; /* مسافة من الشمال */
+        width: 90%; /* عرض القائمة */
+        background-color: #1c2e4a; /* خلفية للقائمة */
+        border-radius: 8px;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        flex-direction: column; /* ترتيب العناصر بشكل طولي */
+        align-items: stretch;
+        padding: 10px;
+        max-width: none; /* نلغي الـ max-width بتاع الديسكتوب */
+        
+        /* إخفاء وإظهار بالحركة */
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+    }
+
+    .main-header.menu-is-open .expanded-links {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+        margin-left: 0; /* نلغي المسافة الزائدة */
+    }
+
+    .expanded-links a {
+        display: block;
+        text-align: center;
+        padding: 15px;
+        margin: 5px 0;
+        white-space: normal;
+    }
+
+    /* 2. تعديل أسهم السلايدر في صفحة المنتج */
+    .slider-btn {
+        padding: 8px;
+        font-size: 18px;
+    }
+}
