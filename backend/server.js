@@ -28,10 +28,12 @@ const products = [
 
 const app = express();
 app.use(cors());
-
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-const PORT = 3000;
+// --- التعديل هنا ---
+// السطر ده معناه: يا سيرفر، حاول تلاقي البورت اللي Render مديهولك. 
+// لو ملقتهوش (يعني لو إحنا بنشغل السيرفر على جهازنا)، استخدم البورت الافتراضي اللي هو 3000
+const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
@@ -43,5 +45,4 @@ app.get('/api/products', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`السيرفر يعمل الآن على البورت ${PORT}`);
-    console.log(`يمكنك فتح الموقع من خلال: http://localhost:${PORT}`);
 });
