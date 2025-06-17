@@ -1,8 +1,26 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const mongoose = require('mongoose');
 
-const products = [
+const app = express();
+app.use(cors());
+app.use(express.static(path.join(__dirname, '../../frontend')));
+
+const productSchema = new mongoose.Schema({
+    id: { type: Number, required: true, unique: true },
+    name: { type: String, required: true },
+    price: { type: Number, required: true },
+    category: { type: String, required: true },
+    images: [String],
+    description: { type: String },
+    sizes: [String]
+});
+
+const Product = mongoose.model('Product', productSchema);
+
+const initialProducts = [
     { id: 1, name: 'Classic Fit Blazer', price: 1200, category: 'رجالي', images: ['/images/classicfitblazer1.jpg', '/images/classicfitblazer2.jpg', '/images/classicfitblazer3.jpg'], description: `خامة: 80% قطن – 20% بوليستر<br>ألوان: أسود، كحلي، رمادي<br>مثالي للمناسبات الرسمية والعمل`, sizes: ['S', 'M', 'L', 'XL'] },
     { id: 2, name: 'Slim Fit Jeans', price: 650, category: 'رجالي', images: ['/images/slimfitjeans1.jpg', '/images/slimfitjeans2.jpg', '/images/slimfitjeans3.jpg'], description: `خامة: دنيم مرن عالي الجودة<br>لون: أزرق غامق<br>جيوب أمامية وخلفية<br>تصميم عصري مريح`, sizes: ['30', '32', '34', '36'] },
     { id: 3, name: 'Cotton Polo Shirt', price: 450, category: 'رجالي', images: ['/images/cottonpoloshirt1.jpg', '/images/cottonpoloshirt2.jpg'], description: `خامة 100% قطن<br>ألوان متعددة: أبيض، أحمر، أزرق، أخضر<br>ياقة بأزرار<br>مناسب للكاجوال أو الشغل`, sizes: ['S', 'M', 'L'] },
@@ -26,17 +44,47 @@ const products = [
     { id: 21, name: 'Unisex Winter Jacket', price: 950, category: 'اطفالي', images: ['/images/unisexwinterjacket1.jpg', '/images/unisexwinterjacket2.jpg'], description: `مبطن ودافئ جدًا<br>مقاوم للهواء والمطر<br>قبعة قابلة للإزالة<br>ألوان: أسود، أزرق، وردي`, sizes: ['S', 'M', 'L', 'XL'] }
 ];
 
-const app = express();
-app.use(cors());
+const main = async () => {
+    try {
+        await mongoose.connect(process.env.MONGO_URI);
+        console.log('تم الاتصال بقاعدة البيانات بنجاح!');
 
-// Vercel يتولى خدمة الملفات الثابتة بناء على ملف vercel.json
-// لذا لم نعد بحاجة لهذا السطر هنا
-// app.use(express.static(path.join(__dirname, '../frontend')));
+        const productCount = await Product.countDocuments();
+        if (productCount === 0) {
+            console.log('قاعدة البيانات فارغة، سيتم إضافة المنتجات...');
+            await Product.insertMany(initialProducts);
+            console.log('تمت إضافة المنتجات الأولية بنجاح!');
+        } else {
+            console.log('المنتجات موجودة بالفعل في قاعدة البيانات.');
+        }
 
-app.get('/api/products', (req, res) => {
-    res.json(products);
+    } catch (err) {
+        console.error('فشل الاتصال بقاعدة البيانات:', err);
+    }
+};
+
+main(); // نشغل دالة الاتصال
+
+app.get('/api/products', async (req, res) => {
+    try {
+        const productsFromDB = await Product.find({});
+        res.json(productsFromDB);
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        res.status(500).json({ message: 'فشل في جلب المنتجات' });
+    }
 });
 
-// السطر الأخير والمهم لـ Vercel
-// Vercel سيقوم بتشغيل هذا التطبيق كدالة Serverless
+// Endpoint لخدمة ملفات الـ HTML الرئيسية
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../frontend', 'index.html'));
+});
+
+// هذا السطر مهم للتشغيل المحلي
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`السيرفر المحلي يعمل الآن على البورت ${PORT}`);
+});
+
+// هذا السطر مهم للنشر على Vercel
 module.exports = app;
