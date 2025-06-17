@@ -283,11 +283,8 @@ function runPageSpecificLogic() {
         
         function handleSearch(event) {
             const searchTerm = event.target.value.toLowerCase().trim();
-            // نفلتر من القائمة الحالية المعروضة (بعد الفلترة بالقسم)
             const baseProducts = category ? allProducts.filter(p => p.category === category) : allProducts;
-            const filteredBySearch = baseProducts.filter(p => 
-                p.name.toLowerCase().includes(searchTerm)
-            );
+            const filteredBySearch = baseProducts.filter(p => p.name.toLowerCase().includes(searchTerm));
             renderProducts(filteredBySearch);
         }
 
