@@ -6,7 +6,9 @@ const mongoose = require('mongoose');
 
 const app = express();
 app.use(cors());
-app.use(express.static(path.join(__dirname, '../../frontend')));
+
+// خدمة الملفات الثابتة من الفولدر الحالي
+app.use(express.static(path.join(__dirname)));
 
 const productSchema = new mongoose.Schema({
     id: { type: Number, required: true, unique: true },
@@ -48,22 +50,18 @@ const main = async () => {
     try {
         await mongoose.connect(process.env.MONGO_URI);
         console.log('تم الاتصال بقاعدة البيانات بنجاح!');
-
         const productCount = await Product.countDocuments();
         if (productCount === 0) {
             console.log('قاعدة البيانات فارغة، سيتم إضافة المنتجات...');
             await Product.insertMany(initialProducts);
             console.log('تمت إضافة المنتجات الأولية بنجاح!');
-        } else {
-            console.log('المنتجات موجودة بالفعل في قاعدة البيانات.');
         }
-
     } catch (err) {
         console.error('فشل الاتصال بقاعدة البيانات:', err);
     }
 };
 
-main(); // نشغل دالة الاتصال
+main();
 
 app.get('/api/products', async (req, res) => {
     try {
@@ -75,16 +73,4 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
-// Endpoint لخدمة ملفات الـ HTML الرئيسية
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../../frontend', 'index.html'));
-});
-
-// هذا السطر مهم للتشغيل المحلي
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`السيرفر المحلي يعمل الآن على البورت ${PORT}`);
-});
-
-// هذا السطر مهم للنشر على Vercel
 module.exports = app;
