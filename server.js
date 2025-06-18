@@ -6,9 +6,9 @@ const mongoose = require('mongoose');
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 
-// Vercel handles static files based on vercel.json
-// But we can add it back for local testing to be safe
+// هذا السطر مهم ليخدم ملفات HTML و CSS والصور عند التشغيل المحلي
 app.use(express.static(path.join(__dirname)));
 
 const productSchema = new mongoose.Schema({
@@ -47,23 +47,31 @@ const initialProducts = [
     { id: 21, name: 'Unisex Winter Jacket', price: 950, category: 'اطفالي', images: ['/images/unisexwinterjacket1.jpg', '/images/unisexwinterjacket2.jpg'], description: `مبطن ودافئ جدًا<br>مقاوم للهواء والمطر<br>قبعة قابلة للإزالة<br>ألوان: أسود، أزرق، وردي`, sizes: ['S', 'M', 'L', 'XL'] }
 ];
 
-const main = async () => {
+const connectDBAndStartServer = async () => {
     try {
         await mongoose.connect(process.env.MONGO_URI);
         console.log('تم الاتصال بقاعدة البيانات بنجاح!');
+        
         const productCount = await Product.countDocuments();
         if (productCount === 0) {
             console.log('قاعدة البيانات فارغة، سيتم إضافة المنتجات...');
             await Product.insertMany(initialProducts);
             console.log('تمت إضافة المنتجات الأولية بنجاح!');
         }
+
+        const PORT = process.env.PORT || 3000;
+        app.listen(PORT, () => {
+            console.log(`السيرفر المحلي يعمل الآن على البورت ${PORT}`);
+            console.log(`http://localhost:${PORT}`);
+        });
+
     } catch (err) {
-        console.error('فشل الاتصال بقاعدة البيانات:', err);
+        console.error('فشل الاتصال أو تشغيل السيرفر:', err);
     }
 };
 
-main();
 
+// API Endpoints
 app.get('/api/products', async (req, res) => {
     try {
         const productsFromDB = await Product.find({});
@@ -73,15 +81,39 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
+// --- الجزء المضاف لحل المشكلة ---
+app.post('/api/products', async (req, res) => {
+    try {
+        // البحث عن أعلى رقم ID موجود لإضافة واحد عليه
+        const lastProduct = await Product.findOne().sort({ id: -1 });
+        const newId = lastProduct ? lastProduct.id + 1 : 1;
+
+        const productData = req.body;
+        const newProduct = new Product({
+            id: newId,
+            name: productData.name,
+            price: productData.price,
+            category: productData.category,
+            description: productData.description,
+            images: productData.images,
+            sizes: productData.sizes
+        });
+
+        const savedProduct = await newProduct.save();
+        res.status(201).json(savedProduct); // 201 Created
+
+    } catch (error) {
+        console.error('خطأ في إضافة المنتج:', error);
+        res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء إضافة المنتج' });
+    }
+});
+// --- نهاية الجزء المضاف ---
+
+
 // Vercel يحتاج هذا السطر
 module.exports = app;
 
-// --- هذا الجزء سيتم إضافته مرة أخرى ---
-// الكود التالي سيشتغل فقط عند تشغيل الملف محلياً، Vercel سيتجاهله
+// هذا الشرط يمنع تشغيل السيرفر مرتين على Vercel ولكنه يسمح بالتشغيل المحلي
 if (require.main === module) {
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-        console.log(`السيرفر المحلي يعمل الآن على البورت ${PORT}`);
-        console.log(`http://localhost:${PORT}`);
-    });
+    connectDBAndStartServer();
 }

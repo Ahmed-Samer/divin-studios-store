@@ -14,7 +14,7 @@ body { font-family: Arial, sans-serif; margin: 0; background-color: #0a192f; col
 
 /* --- تصميم القائمة المنسدلة الموحدة --- */
 .expanded-links {
-    display: none; /* مخفية بشكل افتراضي */
+    display: none;
     flex-direction: column;
     list-style: none;
     margin: 0;
@@ -29,7 +29,7 @@ body { font-family: Arial, sans-serif; margin: 0; background-color: #0a192f; col
     opacity: 0;
     visibility: hidden;
     transform: translateY(-10px);
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s 0.3s;
     z-index: 1001;
 }
 .main-header.menu-is-open .expanded-links {
@@ -37,6 +37,7 @@ body { font-family: Arial, sans-serif; margin: 0; background-color: #0a192f; col
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s;
 }
 .expanded-links li {
     width: 100%;
@@ -160,8 +161,8 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 .customer-details h2, .order-summary h2 { text-align: center; margin-top: 0; border-bottom: 1px solid #3a5b8e; padding-bottom: 15px; margin-bottom: 20px; }
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; margin-bottom: 8px; font-weight: bold; }
-.form-group input, .form-group textarea { width: 100%; background-color: #2a4162; border: 1px solid #3a5b8e; color: #ccd6f6; padding: 12px; border-radius: 4px; box-sizing: border-box; transition: border-color 0.3s; }
-.form-group input:focus, .form-group textarea:focus { outline: none; border-color: #64ffda; }
+.form-group input, .form-group textarea, #add-product-form select { width: 100%; background-color: #2a4162; border: 1px solid #3a5b8e; color: #ccd6f6; padding: 12px; border-radius: 4px; box-sizing: border-box; transition: border-color 0.3s; }
+.form-group input:focus, .form-group textarea:focus, #add-product-form select:focus { outline: none; border-color: #64ffda; }
 .form-row { display: flex; gap: 20px; }
 .form-row .form-group { flex: 1; }
 .summary-item { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
@@ -172,10 +173,11 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 .error-message { color: #ff6b6b; font-size: 13px; margin-top: 5px; display: none; }
 .form-group input.invalid, .form-group textarea.invalid { border-color: #ff6b6b; }
 
-/* --- تصميم الصفحات الثابتة (عن المتجر وتواصل معنا) --- */
-.static-page-container { background-color: #112240; padding: 40px; border-radius: 8px; max-width: 900px; margin: 0 auto; }
+/* --- تصميم الصفحات الثابتة ولوحة التحكم --- */
+.static-page-container, .admin-page-container { background-color: #112240; padding: 40px; border-radius: 8px; max-width: 900px; margin: 40px auto; }
+.static-page-container h1, .admin-header h1 { font-size: 32px; color: #ffffff; margin: 0; }
 .about-content p, .contact-info p { font-size: 18px; line-height: 1.8; margin-bottom: 20px; }
-.about-content h2, .contact-info h2, .contact-form-container h2 { font-size: 28px; color: #64ffda; margin-top: 40px; margin-bottom: 20px; border-bottom: 1px solid #3a5b8e; padding-bottom: 5px; }
+.about-content h2, .contact-info h2, .contact-form-container h2, .admin-section h2 { font-size: 28px; color: #64ffda; margin-top: 40px; margin-bottom: 20px; border-bottom: 1px solid #3a5b8e; padding-bottom: 5px; }
 .about-content ul, .contact-info ul { list-style: none; padding-right: 20px; margin-bottom: 20px; }
 .about-content ul li, .contact-info ul li { font-size: 18px; margin-bottom: 15px; position: relative; }
 .about-content ul li::before { content: '✓'; color: #64ffda; position: absolute; right: -25px; }
@@ -183,45 +185,26 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 .contact-info ul li a { color: #ccd6f6; text-decoration: none; transition: color 0.3s; }
 .contact-info ul li a:hover { color: #64ffda; }
 .contact-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #64ffda; padding-bottom: 15px; margin-bottom: 30px; }
 
 /* --- أكواد التصميم المتجاوب (Responsive) --- */
 @media (max-width: 992px) { 
     .product-grid { grid-template-columns: repeat(2, 1fr); } 
     .checkout-layout, .cart-layout, .contact-layout { grid-template-columns: 1fr; } 
 }
-
 @media (max-width: 768px) {
-    /* --- تعديلات الهيدر للموبايل --- */
+    .navbar { flex-wrap: nowrap; align-items: center; }
     .nav-section.middle { order: 0; flex: 2; text-align: center; }
     .nav-section.right, .nav-section.left { flex: 1; }
     .logo { font-size: 24px; }
-    .expanded-links { display: none; }
-    .search-container { display: none; }
-    .search-toggle-btn { display: block; }
+    .expanded-links { display: none; } 
+    .search-container { display: none; } 
+    .search-toggle-btn { display: block; } 
     
-    .search-overlay {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        width: 100%;
-        background-color: #0a192f;
-        padding: 15px 5%;
-        box-sizing: border-box;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        display: none;
-    }
+    .search-overlay { position: absolute; top: 100%; left: 0; width: 100%; background-color: #0a192f; padding: 15px 5%; box-sizing: border-box; box-shadow: 0 4px 8px rgba(0,0,0,0.2); display: none; }
     .main-header.search-active .search-overlay { display: block; }
-    #mobile-search-bar {
-        width: 100%;
-        background-color: #2a4162;
-        border: 1px solid #64ffda;
-        color: #ccd6f6;
-        padding: 12px 15px;
-        border-radius: 20px;
-        outline: none;
-    }
+    #mobile-search-bar { width: 100%; background-color: #2a4162; border: 1px solid #64ffda; color: #ccd6f6; padding: 12px 15px; border-radius: 20px; outline: none; }
     
-    /* باقي التعديلات العامة للموبايل */
     .product-detail-layout { grid-template-columns: 1fr; } 
     .product-title-large { font-size: 32px; }
     .slider-btn { padding: 10px; font-size: 20px; }

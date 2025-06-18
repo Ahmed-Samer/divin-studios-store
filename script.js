@@ -31,10 +31,10 @@ if(searchToggleBtn){
 
 // إغلاق القوائم المفتوحة عند الضغط في أي مكان في الصفحة
 window.addEventListener('click', () => {
-    if (header.classList.contains('menu-is-open')) {
+    if (header && header.classList.contains('menu-is-open')) {
         header.classList.remove('menu-is-open');
     }
-    if (header.classList.contains('search-active')) {
+    if (header && header.classList.contains('search-active')) {
         header.classList.remove('search-active');
     }
 });
@@ -42,7 +42,6 @@ window.addEventListener('click', () => {
 // منع إغلاق القوائم عند الضغط بداخلها
 if(header){
     header.addEventListener('click', (e) => {
-        // لا توقف الانتشار إلا إذا كان الضغط داخل القوائم نفسها
         if (e.target.closest('.expanded-links') || e.target.closest('.search-overlay')) {
              e.stopPropagation();
         }
@@ -54,56 +53,13 @@ if(header){
 let allProducts = [];
 
 // --- دوال سلة المشتريات ---
-function showToast(message) {
-    const toastContainer = document.getElementById('toast-container');
-    if (!toastContainer) return;
-    const toast = document.createElement('div');
-    toast.classList.add('toast');
-    toast.textContent = message;
-    toastContainer.appendChild(toast);
-    setTimeout(() => {
-        toast.remove();
-    }, 4000);
-}
-
-function updateCartIcon() {
-    const cart = JSON.parse(localStorage.getItem('cart')) || [];
-    const cartCountElements = document.querySelectorAll('.cart-count');
-    let totalItems = 0;
-    cart.forEach(item => totalItems += item.quantity);
-    cartCountElements.forEach(el => {
-        el.textContent = totalItems;
-    });
-}
-
-function addToCart(productId, quantity, size) {
-    if (!size) {
-        alert('من فضلك اختر المقاس أولاً.');
-        return;
-    }
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
-    const existingProductIndex = cart.findIndex(item => item.id == productId && item.size == size);
-    if (existingProductIndex > -1) {
-        cart[existingProductIndex].quantity += quantity;
-    } else {
-        cart.push({ id: productId, quantity: quantity, size: size });
-    }
-    localStorage.setItem('cart', JSON.stringify(cart));
-    updateCartIcon();
-    showToast(`تمت إضافة ${quantity} قطعة للسلة بنجاح ✔️`);
-}
-
-function removeFromCart(cartItemId) {
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
-    cart = cart.filter(item => (item.id + '-' + item.size) !== cartItemId);
-    localStorage.setItem('cart', JSON.stringify(cart));
-    displayCartItems();
-}
-
+function showToast(message) { const toastContainer = document.getElementById('toast-container'); if (!toastContainer) return; const toast = document.createElement('div'); toast.classList.add('toast'); toast.textContent = message; toastContainer.appendChild(toast); setTimeout(() => { toast.remove(); }, 4000); }
+function updateCartIcon() { const cart = JSON.parse(localStorage.getItem('cart')) || []; const cartCountElements = document.querySelectorAll('.cart-count'); let totalItems = 0; cart.forEach(item => totalItems += item.quantity); cartCountElements.forEach(el => { el.textContent = totalItems; }); }
+function addToCart(productId, quantity, size) { if (!size) { alert('من فضلك اختر المقاس أولاً.'); return; } let cart = JSON.parse(localStorage.getItem('cart')) || []; const existingProductIndex = cart.findIndex(item => item.id == productId && item.size == size); if (existingProductIndex > -1) { cart[existingProductIndex].quantity += quantity; } else { cart.push({ id: productId, quantity: quantity, size: size }); } localStorage.setItem('cart', JSON.stringify(cart)); updateCartIcon(); showToast(`تمت إضافة ${quantity} قطعة للسلة بنجاح ✔️`); }
+function removeFromCart(cartItemId) { let cart = JSON.parse(localStorage.getItem('cart')) || []; cart = cart.filter(item => (item.id + '-' + item.size) !== cartItemId); localStorage.setItem('cart', JSON.stringify(cart)); displayCartItems(); }
 function changeCartItemQuantity(cartItemId, change) {
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
     const itemIndex = cart.findIndex(item => (item.id + '-' + item.size) === cartItemId);
-
     if (itemIndex > -1) {
         cart[itemIndex].quantity += change;
         if (cart[itemIndex].quantity <= 0) {
@@ -114,18 +70,8 @@ function changeCartItemQuantity(cartItemId, change) {
     displayCartItems();
 }
 
-
 // --- دالة لرسم كروت المنتجات في الصفحة الرئيسية ---
-function renderProducts(productsToRender) {
-    const productGrid = document.querySelector('.product-grid');
-    if (!productGrid) return;
-    productGrid.innerHTML = '';
-    if (productsToRender.length === 0) {
-        productGrid.innerHTML = `<div class="empty-cart-container" style="display:block; grid-column: 1 / -1; text-align: center;"><h2>لا توجد منتجات تطابق بحثك.</h2><p>حاول استخدام كلمات بحث مختلفة.</p></div>`;
-        return;
-    }
-    productsToRender.forEach(product => {
-        const cardHTML = `
+function renderProducts(productsToRender) { const productGrid = document.querySelector('.product-grid'); if (!productGrid) return; productGrid.innerHTML = ''; if (productsToRender.length === 0) { productGrid.innerHTML = `<div class="empty-cart-container" style="display:block; grid-column: 1 / -1; text-align: center;"><h2>لا توجد منتجات تطابق بحثك.</h2><p>حاول استخدام كلمات بحث مختلفة.</p></div>`; return; } productsToRender.forEach(product => { const cardHTML = `
             <div class="product-card">
                 <div class="card-image"> <img src="${product.images[0]}" alt="${product.name}"> </div>
                 <div class="card-content">
@@ -134,10 +80,7 @@ function renderProducts(productsToRender) {
                     <a href="product.html?id=${product.id}" class="btn">عرض التفاصيل</a>
                 </div>
             </div>
-        `;
-        productGrid.innerHTML += cardHTML;
-    });
-}
+        `; productGrid.innerHTML += cardHTML; }); }
 
 // --- دالة لعرض المنتجات في صفحة السلة ---
 function displayCartItems() {
@@ -156,21 +99,7 @@ function displayCartItems() {
             if (product) {
                 totalPrice += product.price * cartItem.quantity;
                 const cartItemId = `${product.id}-${cartItem.size}`;
-                const cartItemHTML = `
-                    <div class="cart-item">
-                        <img src="${product.images[0]}" alt="${product.name}" class="cart-item-image">
-                        <div class="cart-item-details">
-                            <h3>${product.name}</h3>
-                            <p>المقاس: ${cartItem.size}</p>
-                            <div class="cart-item-quantity">
-                                <button class="quantity-btn minus-btn" data-id="${cartItemId}">-</button>
-                                <span class="quantity-text">${cartItem.quantity}</span>
-                                <button class="quantity-btn plus-btn" data-id="${cartItemId}">+</button>
-                            </div>
-                        </div>
-                        <p class="cart-item-price">${product.price * cartItem.quantity} ج.م</p>
-                        <button class="remove-from-cart-btn" data-id="${cartItemId}">🗑️</button>
-                    </div>`;
+                const cartItemHTML = `<div class="cart-item"> <img src="${product.images[0]}" alt="${product.name}" class="cart-item-image"> <div class="cart-item-details"> <h3>${product.name}</h3> <p>المقاس: ${cartItem.size}</p> <div class="cart-item-quantity"> <button class="quantity-btn minus-btn" data-id="${cartItemId}">-</button> <span class="quantity-text">${cartItem.quantity}</span> <button class="quantity-btn plus-btn" data-id="${cartItemId}">+</button> </div> </div> <p class="cart-item-price">${product.price * cartItem.quantity} ج.م</p> <button class="remove-from-cart-btn" data-id="${cartItemId}">🗑️</button> </div>`;
                 cartItemsContainer.innerHTML += cartItemHTML;
             }
         });
@@ -232,6 +161,7 @@ function runPageSpecificLogic() {
     const productGrid = document.querySelector('.product-grid');
     const cartPageContainer = document.querySelector('.cart-page-container');
     const checkoutPageContainer = document.querySelector('.checkout-page-container');
+    const adminForm = document.getElementById('add-product-form');
 
     if (productDetailLayout) {
         const productId = urlParams.get('id');
@@ -277,17 +207,14 @@ function runPageSpecificLogic() {
         const category = urlParams.get('category');
         let currentProducts = category ? allProducts.filter(p => p.category === category) : allProducts;
         renderProducts(currentProducts);
-        
         const searchBar = document.getElementById('search-bar');
         const mobileSearchBar = document.getElementById('mobile-search-bar');
-        
         function handleSearch(event) {
             const searchTerm = event.target.value.toLowerCase().trim();
             const baseProducts = category ? allProducts.filter(p => p.category === category) : allProducts;
             const filteredBySearch = baseProducts.filter(p => p.name.toLowerCase().includes(searchTerm));
             renderProducts(filteredBySearch);
         }
-
         if(searchBar) searchBar.addEventListener('input', handleSearch);
         if(mobileSearchBar) mobileSearchBar.addEventListener('input', handleSearch);
     }
@@ -302,14 +229,46 @@ function runPageSpecificLogic() {
         if(checkoutForm) {
             checkoutForm.addEventListener('submit', function(event) {
                 event.preventDefault();
-                const isFormValid = validateForm();
-                if (isFormValid) {
+                if (validateForm()) {
                     alert('تم تأكيد طلبك بنجاح! سيتم التواصل معك قريباً.');
                     localStorage.removeItem('cart');
                     setTimeout(() => { window.location.href = 'index.html'; }, 500);
                 }
             });
         }
+    }
+
+    if (adminForm) {
+        adminForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const newProduct = {
+                name: document.getElementById('name').value,
+                price: parseFloat(document.getElementById('price').value),
+                category: document.getElementById('category').value,
+                description: document.getElementById('description').value,
+                images: document.getElementById('images').value.split(',').map(item => item.trim()),
+                sizes: document.getElementById('sizes').value.split(',').map(item => item.trim()),
+            };
+
+            try {
+                const response = await fetch('/api/products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newProduct)
+                });
+
+                if (response.ok) {
+                    alert('تمت إضافة المنتج بنجاح!');
+                    adminForm.reset();
+                } else {
+                    const errorData = await response.json();
+                    alert('فشل في إضافة المنتج: ' + (errorData.message || 'خطأ غير معروف'));
+                }
+            } catch (error) {
+                console.error('Error submitting product:', error);
+                alert('حدث خطأ في الشبكة. يرجى المحاولة مرة أخرى.');
+            }
+        });
     }
     
     updateCartIcon();
