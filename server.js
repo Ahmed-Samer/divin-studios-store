@@ -8,7 +8,8 @@ const app = express();
 app.use(cors());
 
 // Vercel handles static files based on vercel.json
-// app.use(express.static(path.join(__dirname)));
+// But we can add it back for local testing to be safe
+app.use(express.static(path.join(__dirname)));
 
 const productSchema = new mongoose.Schema({
     id: { type: Number, required: true, unique: true },
@@ -68,9 +69,19 @@ app.get('/api/products', async (req, res) => {
         const productsFromDB = await Product.find({});
         res.json(productsFromDB);
     } catch (error) {
-        console.error('Error fetching products:', error);
         res.status(500).json({ message: 'فشل في جلب المنتجات' });
     }
 });
 
+// Vercel يحتاج هذا السطر
 module.exports = app;
+
+// --- هذا الجزء سيتم إضافته مرة أخرى ---
+// الكود التالي سيشتغل فقط عند تشغيل الملف محلياً، Vercel سيتجاهله
+if (require.main === module) {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`السيرفر المحلي يعمل الآن على البورت ${PORT}`);
+        console.log(`http://localhost:${PORT}`);
+    });
+}
