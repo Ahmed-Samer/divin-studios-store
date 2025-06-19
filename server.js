@@ -8,13 +8,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- بداية التعديلات الرئيسية ---
 
-// 1. الاتصال بقاعدة البيانات أولاً عند بدء تشغيل التطبيق
 mongoose.connect(process.env.MONGO_URI)
     .then(() => {
         console.log('تم الاتصال بقاعدة البيانات بنجاح!');
-        // بعد الاتصال الناجح، يتم التأكد من وجود المنتجات الأولية
         seedInitialProducts();
     })
     .catch(err => {
@@ -28,12 +25,14 @@ const productSchema = new mongoose.Schema({
     category: { type: String, required: true },
     images: [String],
     description: { type: String },
-    sizes: [String]
+    sizes: [String],
+    isDeleted: { type: Boolean, default: false }
 });
 
 const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
 
 const initialProducts = [
+    // ... محتوى المنتجات الأولية كما هو بدون تغيير ...
     { id: 1, name: 'Classic Fit Blazer', price: 1200, category: 'رجالي', images: ['/images/classicfitblazer1.jpg', '/images/classicfitblazer2.jpg', '/images/classicfitblazer3.jpg'], description: `خامة: 80% قطن – 20% بوليستر<br>ألوان: أسود، كحلي، رمادي<br>مثالي للمناسبات الرسمية والعمل`, sizes: ['S', 'M', 'L', 'XL'] },
     { id: 2, name: 'Slim Fit Jeans', price: 650, category: 'رجالي', images: ['/images/slimfitjeans1.jpg', '/images/slimfitjeans2.jpg', '/images/slimfitjeans3.jpg'], description: `خامة: دنيم مرن عالي الجودة<br>لون: أزرق غامق<br>جيوب أمامية وخلفية<br>تصميم عصري مريح`, sizes: ['30', '32', '34', '36'] },
     { id: 3, name: 'Cotton Polo Shirt', price: 450, category: 'رجالي', images: ['/images/cottonpoloshirt1.jpg', '/images/cottonpoloshirt2.jpg'], description: `خامة 100% قطن<br>ألوان متعددة: أبيض، أحمر، أزرق، أخضر<br>ياقة بأزرار<br>مناسب للكاجوال أو الشغل`, sizes: ['S', 'M', 'L'] },
@@ -53,11 +52,10 @@ const initialProducts = [
     { id: 17, name: 'Kids Zip-Up Hoodie', price: 380, category: 'اطفالي', images: ['/images/kidszipuphoodie1.jpg', '/images/kidszipuphoodie2.jpg'], description: `خامة دافئة<br>قبعة + سوستة<br>مناسب للأولاد والبنات<br>ألوان: رمادي، كحلي، موف`, sizes: ['S', 'M', 'L'] },
     { id: 18, name: 'Baby Romper Set', price: 320, category: 'اطفالي', images: ['/images/babyromperset1.jpg', '/images/babyromperset2.jpg'], description: `قطعة واحدة + قبعة<br>خامة ناعمة آمنة للرضع<br>سن: 0–24 شهر<br>ألوان: سماوي، أبيض، أصفر`, sizes: ['0-6M', '6-12M', '12-24M'] },
     { id: 19, name: 'Boys Cargo Shorts', price: 300, category: 'اطفالي', images: ['/images/boyscargoshorts1.jpg', '/images/boyscargoshorts2.jpg'], description: `قطن قوي<br>جيوب جانبية<br>ألوان: بيج، زيتي، كاكي<br>مثالي للعب والحركة`, sizes: ['4Y', '6Y', '8Y', '10Y'] },
-    { id: 20, name: 'Girls Leggings Pack (2pcs)', price: 250, category: 'اطفالي', images: ['/images/girlsleggingspack1.jpg', '/images/girlsleggingspack2.jpg'], description: `خامة مطاطية ومريحة<br>تصميمات مرحة<br>من 4–12 سنة<br>ألوان متنوعة`, sizes: ['4-5Y', '6-7Y', '8-9Y'] },
+    { id: 20, 'Girls Leggings Pack (2pcs)': 'اطفالي', images: ['/images/girlsleggingspack1.jpg', '/images/girlsleggingspack2.jpg'], description: `خامة مطاطية ومريحة<br>تصميمات مرحة<br>من 4–12 سنة<br>ألوان متنوعة`, sizes: ['4-5Y', '6-7Y', '8-9Y'] },
     { id: 21, name: 'Unisex Winter Jacket', price: 950, category: 'اطفالي', images: ['/images/unisexwinterjacket1.jpg', '/images/unisexwinterjacket2.jpg'], description: `مبطن ودافئ جدًا<br>مقاوم للهواء والمطر<br>قبعة قابلة للإزالة<br>ألوان: أسود، أزرق، وردي`, sizes: ['S', 'M', 'L', 'XL'] }
 ];
 
-// دالة لإضافة المنتجات الأولية إذا كانت قاعدة البيانات فارغة
 async function seedInitialProducts() {
     try {
         const productCount = await Product.countDocuments();
@@ -71,14 +69,32 @@ async function seedInitialProducts() {
     }
 }
 
-// API Endpoints
+// جلب المنتجات النشطة فقط (الغير محذوفة أو القديمة التي لا تحتوي على الحقل)
 app.get('/api/products', async (req, res) => {
     try {
-        const productsFromDB = await Product.find({});
+        // --- بداية التعديل ---
+        const productsFromDB = await Product.find({ 
+            $or: [
+                { isDeleted: false }, 
+                { isDeleted: { $exists: false } }
+            ] 
+        });
+        // --- نهاية التعديل ---
         res.json(productsFromDB);
     } catch (error) {
         console.error("خطأ في '/api/products' GET:", error);
         res.status(500).json({ message: 'فشل في جلب المنتجات' });
+    }
+});
+
+// جلب المنتجات المحذوفة فقط
+app.get('/api/products/deleted', async (req, res) => {
+    try {
+        const deletedProducts = await Product.find({ isDeleted: true });
+        res.json(deletedProducts);
+    } catch (error) {
+        console.error("خطأ في '/api/products/deleted' GET:", error);
+        res.status(500).json({ message: 'فشل في جلب المنتجات المحذوفة' });
     }
 });
 
@@ -104,13 +120,53 @@ app.post('/api/products', async (req, res) => {
     }
 });
 
-// هذا السطر مهم ليخدم ملفات HTML و CSS والصور
+app.put('/api/products/:id', async (req, res) => {
+    try {
+        const productId = req.params.id;
+        const updatedData = req.body;
+        const updatedProduct = await Product.findOneAndUpdate({ id: productId }, updatedData, { new: true });
+        if (!updatedProduct) {
+            return res.status(404).json({ message: 'المنتج غير موجود' });
+        }
+        res.json(updatedProduct);
+    } catch (error) {
+        console.error("خطأ في '/api/products/:id' PUT:", error);
+        res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء تحديث المنتج' });
+    }
+});
+
+app.delete('/api/products/:id', async (req, res) => {
+    try {
+        const productId = req.params.id;
+        const result = await Product.findOneAndUpdate({ id: productId }, { isDeleted: true }, { new: true });
+        if (!result) {
+            return res.status(404).json({ message: 'المنتج غير موجود' });
+        }
+        res.status(200).json({ message: 'تم نقل المنتج لسلة المحذوفات' });
+    } catch (error) {
+        console.error("خطأ في '/api/products/:id' DELETE:", error);
+        res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء حذف المنتج' });
+    }
+});
+
+app.post('/api/products/:id/restore', async (req, res) => {
+    try {
+        const productId = req.params.id;
+        const result = await Product.findOneAndUpdate({ id: productId }, { isDeleted: false }, { new: true });
+        if (!result) {
+            return res.status(404).json({ message: 'المنتج المحذوف غير موجود' });
+        }
+        res.status(200).json({ message: 'تم استرجاع المنتج بنجاح' });
+    } catch (error) {
+        console.error("خطأ في '/api/products/:id/restore' POST:", error);
+        res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء استرجاع المنتج' });
+    }
+});
+
 app.use(express.static(path.join(__dirname)));
 
-// Vercel يحتاج هذا السطر لتصدير التطبيق
 module.exports = app;
 
-// هذا الشرط يسمح بالتشغيل المحلي فقط
 if (require.main === module) {
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
@@ -118,4 +174,3 @@ if (require.main === module) {
         console.log(`http://localhost:${PORT}`);
     });
 }
-// --- نهاية التعديلات الرئيسية ---

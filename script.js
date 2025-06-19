@@ -5,9 +5,8 @@ const searchToggleBtn = document.querySelector('.search-toggle-btn');
 
 if (toggleBtn) {
     toggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); // يمنع إغلاق القائمة فوراً بسبب الـ event listener على الـ window
+        e.stopPropagation(); 
         header.classList.toggle('menu-is-open');
-        // لو قائمة البحث مفتوحة، اقفلها
         if (header.classList.contains('search-active')) {
             header.classList.remove('search-active');
         }
@@ -18,18 +17,15 @@ if(searchToggleBtn){
     searchToggleBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         header.classList.toggle('search-active');
-        // لو قائمة الأقسام مفتوحة، اقفلها
         if (header.classList.contains('menu-is-open')) {
             header.classList.remove('menu-is-open');
         }
-        // للتركيز على حقل البحث تلقائياً عند فتحه
         if(header.classList.contains('search-active')){
             document.getElementById('mobile-search-bar').focus();
         }
     });
 }
 
-// إغلاق القوائم المفتوحة عند الضغط في أي مكان في الصفحة
 window.addEventListener('click', () => {
     if (header && header.classList.contains('menu-is-open')) {
         header.classList.remove('menu-is-open');
@@ -39,7 +35,6 @@ window.addEventListener('click', () => {
     }
 });
 
-// منع إغلاق القوائم عند الضغط بداخلها
 if(header){
     header.addEventListener('click', (e) => {
         if (e.target.closest('.expanded-links') || e.target.closest('.search-overlay')) {
@@ -53,9 +48,21 @@ if(header){
 let allProducts = [];
 
 // --- دوال سلة المشتريات ---
-function showToast(message) { const toastContainer = document.getElementById('toast-container'); if (!toastContainer) return; const toast = document.createElement('div'); toast.classList.add('toast'); toast.textContent = message; toastContainer.appendChild(toast); setTimeout(() => { toast.remove(); }, 4000); }
+function showToast(message, isError = false) { 
+    const toastContainer = document.getElementById('toast-container'); 
+    if (!toastContainer) return; 
+    const toast = document.createElement('div'); 
+    toast.classList.add('toast'); 
+    if (isError) {
+        toast.style.backgroundColor = '#e74c3c';
+        toast.style.color = '#ffffff';
+    }
+    toast.textContent = message; 
+    toastContainer.appendChild(toast); 
+    setTimeout(() => { toast.remove(); }, 4000); 
+}
 function updateCartIcon() { const cart = JSON.parse(localStorage.getItem('cart')) || []; const cartCountElements = document.querySelectorAll('.cart-count'); let totalItems = 0; cart.forEach(item => totalItems += item.quantity); cartCountElements.forEach(el => { el.textContent = totalItems; }); }
-function addToCart(productId, quantity, size) { if (!size) { alert('من فضلك اختر المقاس أولاً.'); return; } let cart = JSON.parse(localStorage.getItem('cart')) || []; const existingProductIndex = cart.findIndex(item => item.id == productId && item.size == size); if (existingProductIndex > -1) { cart[existingProductIndex].quantity += quantity; } else { cart.push({ id: productId, quantity: quantity, size: size }); } localStorage.setItem('cart', JSON.stringify(cart)); updateCartIcon(); showToast(`تمت إضافة ${quantity} قطعة للسلة بنجاح ✔️`); }
+function addToCart(productId, quantity, size) { if (!size) { showToast('من فضلك اختر المقاس أولاً.', true); return; } let cart = JSON.parse(localStorage.getItem('cart')) || []; const existingProductIndex = cart.findIndex(item => item.id == productId && item.size == size); if (existingProductIndex > -1) { cart[existingProductIndex].quantity += quantity; } else { cart.push({ id: productId, quantity: quantity, size: size }); } localStorage.setItem('cart', JSON.stringify(cart)); updateCartIcon(); showToast(`تمت إضافة ${quantity} قطعة للسلة بنجاح ✔️`); }
 function removeFromCart(cartItemId) { let cart = JSON.parse(localStorage.getItem('cart')) || []; cart = cart.filter(item => (item.id + '-' + item.size) !== cartItemId); localStorage.setItem('cart', JSON.stringify(cart)); displayCartItems(); }
 function changeCartItemQuantity(cartItemId, change) {
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
@@ -154,6 +161,139 @@ async function initializeStore() {
     }
 }
 
+
+// --- بداية منطق صفحة الأدمن ---
+
+let currentAdminCategoryFilter = 'all';
+
+function applyAdminFiltersAndSearch() {
+    const searchBar = document.getElementById('admin-search-bar');
+    if (!searchBar) return;
+    const searchTerm = searchBar.value.toLowerCase().trim();
+    let filteredProducts = allProducts.filter(p => !p.isDeleted);
+    if (currentAdminCategoryFilter !== 'all') {
+        filteredProducts = filteredProducts.filter(p => p.category === currentAdminCategoryFilter);
+    }
+    if (searchTerm) {
+        filteredProducts = filteredProducts.filter(p => p.name.toLowerCase().includes(searchTerm));
+    }
+    displayAdminProducts(filteredProducts);
+}
+
+function displayAdminProducts(productsToDisplay) {
+    const listContainer = document.getElementById('manage-products-list');
+    if (!listContainer) return;
+    listContainer.innerHTML = ''; 
+    if (productsToDisplay.length === 0) {
+        listContainer.innerHTML = '<p style="text-align:center;">لا توجد منتجات تطابق هذا الفلتر.</p>';
+        return;
+    }
+    productsToDisplay.forEach(product => {
+        const itemHTML = `<div class="managed-product-item"> <p class="managed-product-info">${product.name} - <span>${product.price} ج.م</span></p> <div class="managed-product-controls"> <button class="btn-edit" data-id="${product.id}">تعديل</button> <button class="btn-delete" data-id="${product.id}">حذف</button> </div> </div>`;
+        listContainer.innerHTML += itemHTML;
+    });
+    document.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', () => handleDeleteProduct(btn.dataset.id)));
+    document.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', () => handleEditProduct(btn.dataset.id)));
+}
+
+// --- الدوال الجديدة الخاصة بالمنتجات المحذوفة ---
+
+async function displayDeletedProducts() {
+    const listContainer = document.getElementById('deleted-products-list');
+    if (!listContainer) return;
+    try {
+        const response = await fetch('/api/products/deleted');
+        if (!response.ok) throw new Error('Failed to fetch deleted products');
+        const deletedProducts = await response.json();
+        listContainer.innerHTML = '';
+        if (deletedProducts.length === 0) {
+            listContainer.innerHTML = '<p style="text-align:center;">سلة المحذوفات فارغة.</p>';
+            return;
+        }
+        deletedProducts.forEach(product => {
+            const itemHTML = `<div class="managed-product-item"> <p class="managed-product-info">${product.name}</p> <div class="managed-product-controls"> <button class="btn-restore" data-id="${product.id}">استرجاع</button> </div> </div>`;
+            listContainer.innerHTML += itemHTML;
+        });
+        document.querySelectorAll('.btn-restore').forEach(btn => btn.addEventListener('click', () => handleRestoreProduct(btn.dataset.id)));
+    } catch (error) {
+        showToast('فشل في جلب المنتجات المحذوفة.', true);
+        console.error(error);
+    }
+}
+
+async function handleRestoreProduct(id) {
+    try {
+        const response = await fetch(`/api/products/${id}/restore`, { method: 'POST' });
+        if (response.ok) {
+            showToast('تم استرجاع المنتج بنجاح ✔️');
+            await refreshAllAdminLists();
+        } else {
+            throw new Error('فشل استرجاع المنتج');
+        }
+    } catch (error) {
+        showToast(error.message, true);
+        console.error('Error restoring product:', error);
+    }
+}
+
+async function refreshAllAdminLists() {
+    try {
+        const response = await fetch('/api/products');
+        if (!response.ok) throw new Error('Failed to fetch latest products');
+        allProducts = await response.json();
+        applyAdminFiltersAndSearch();
+        await displayDeletedProducts();
+    } catch (error) {
+        showToast('فشل في تحديث قوائم المنتجات.', true);
+    }
+}
+// --- نهاية الدوال الجديدة ---
+
+async function handleDeleteProduct(id) {
+    if (!confirm('هل أنت متأكد من نقل هذا المنتج إلى سلة المحذوفات؟')) {
+        return;
+    }
+    try {
+        const response = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+            showToast('تم نقل المنتج إلى سلة المحذوفات ✔️');
+            await refreshAllAdminLists();
+        } else {
+            const error = await response.json();
+            throw new Error(error.message || 'فشل حذف المنتج');
+        }
+    } catch (error) {
+        showToast(error.message, true);
+        console.error('Error deleting product:', error);
+    }
+}
+
+function handleEditProduct(id) {
+    const product = allProducts.find(p => p.id == id);
+    if (!product) return;
+    document.getElementById('product-id').value = product.id;
+    document.getElementById('name').value = product.name;
+    document.getElementById('price').value = product.price;
+    document.getElementById('category').value = product.category;
+    document.getElementById('description').value = product.description.replace(/<br\s*\/?>/gi, "\n");
+    document.getElementById('images').value = product.images.join(', ');
+    document.getElementById('sizes').value = product.sizes.join(',');
+    document.getElementById('form-title').textContent = `تعديل المنتج: ${product.name}`;
+    document.getElementById('submit-btn').textContent = 'تحديث المنتج';
+    document.getElementById('cancel-edit-btn').style.display = 'inline-block';
+    document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetAdminForm() {
+    const form = document.getElementById('add-product-form');
+    if(!form) return;
+    form.reset();
+    document.getElementById('product-id').value = '';
+    document.getElementById('form-title').textContent = 'إضافة منتج جديد';
+    document.getElementById('submit-btn').textContent = 'إضافة المنتج';
+    document.getElementById('cancel-edit-btn').style.display = 'none';
+}
+
 // --- دالة لتشغيل الكود المناسب لكل صفحة ---
 function runPageSpecificLogic() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -239,34 +379,57 @@ function runPageSpecificLogic() {
     }
 
     if (adminForm) {
+        applyAdminFiltersAndSearch();
+        displayDeletedProducts();
+        
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+        if(cancelBtn) cancelBtn.addEventListener('click', resetAdminForm);
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelector('.filter-btn.active').classList.remove('active');
+                btn.classList.add('active');
+                currentAdminCategoryFilter = btn.dataset.category;
+                applyAdminFiltersAndSearch();
+            });
+        });
+
+        const adminSearchBar = document.getElementById('admin-search-bar');
+        if(adminSearchBar) adminSearchBar.addEventListener('input', applyAdminFiltersAndSearch);
+
         adminForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const newProduct = {
+            const productId = document.getElementById('product-id').value;
+            const isEditMode = productId !== '';
+            const productData = {
                 name: document.getElementById('name').value,
                 price: parseFloat(document.getElementById('price').value),
                 category: document.getElementById('category').value,
-                description: document.getElementById('description').value,
+                description: document.getElementById('description').value.replace(/\n/g, '<br>'),
                 images: document.getElementById('images').value.split(',').map(item => item.trim()),
                 sizes: document.getElementById('sizes').value.split(',').map(item => item.trim()),
             };
+            const url = isEditMode ? `/api/products/${productId}` : '/api/products';
+            const method = isEditMode ? 'PUT' : 'POST';
 
             try {
-                const response = await fetch('/api/products', {
-                    method: 'POST',
+                const response = await fetch(url, {
+                    method: method,
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newProduct)
+                    body: JSON.stringify(productData)
                 });
-
                 if (response.ok) {
-                    alert('تمت إضافة المنتج بنجاح!');
-                    adminForm.reset();
+                    const successMessage = isEditMode ? 'تم تحديث المنتج بنجاح!' : 'تمت إضافة المنتج بنجاح!';
+                    showToast(successMessage);
+                    resetAdminForm();
+                    await refreshAllAdminLists();
                 } else {
                     const errorData = await response.json();
-                    alert('فشل في إضافة المنتج: ' + (errorData.message || 'خطأ غير معروف'));
+                    throw new Error(errorData.message || 'فشل في تنفيذ العملية');
                 }
             } catch (error) {
+                showToast(error.message, true);
                 console.error('Error submitting product:', error);
-                alert('حدث خطأ في الشبكة. يرجى المحاولة مرة أخرى.');
             }
         });
     }

@@ -186,6 +186,8 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 .contact-info ul li a:hover { color: #64ffda; }
 .contact-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
 .admin-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #64ffda; padding-bottom: 15px; margin-bottom: 30px; }
+.btn-secondary { background-color: #2a4162; margin-right: 10px; }
+.btn-secondary:hover { background-color: #3a5b8e; }
 
 /* --- أكواد التصميم المتجاوب (Responsive) --- */
 @media (max-width: 992px) { 
@@ -210,3 +212,109 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
     .slider-btn { padding: 10px; font-size: 20px; }
     .product-grid { grid-template-columns: 1fr; }
 }
+
+/* --- إدارة المنتجات (صفحة الأدمن) --- */
+.admin-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0 20px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+.admin-filters {
+    display: flex;
+    gap: 10px;
+}
+.filter-btn {
+    background-color: transparent;
+    border: 1px solid #3a5b8e;
+    color: #ccd6f6;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+.filter-btn:hover {
+    background-color: #2a4162;
+    border-color: #64ffda;
+}
+.filter-btn.active {
+    background-color: #64ffda;
+    color: #0a192f;
+    border-color: #64ffda;
+}
+.admin-search input[type="search"] {
+    background-color: #2a4162;
+    border: 1px solid #3a5b8e;
+    color: #ccd6f6;
+    padding: 8px 15px;
+    border-radius: 20px;
+    width: 250px;
+}
+.admin-search input[type="search"]:focus {
+    outline: none;
+    border-color: #64ffda;
+}
+
+#manage-products-list, #deleted-products-list {
+    border-top: 1px solid #3a5b8e;
+    margin-top: 20px;
+    padding-top: 20px;
+}
+.managed-product-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #2a4162;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+.managed-product-info {
+    font-size: 18px;
+}
+.managed-product-info span {
+    color: #64ffda;
+    font-weight: bold;
+}
+.managed-product-controls {
+    display: flex;
+    gap: 10px;
+}
+.btn-edit, .btn-delete, .btn-restore {
+    padding: 8px 15px;
+    font-size: 14px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s, transform 0.2s;
+}
+.btn-edit {
+    background-color: #f1c40f;
+    color: #0a192f;
+}
+.btn-edit:hover {
+    background-color: #f39c12;
+    transform: scale(1.05);
+}
+.btn-delete {
+    background-color: #e74c3c;
+    color: #ffffff;
+}
+.btn-delete:hover {
+    background-color: #c0392b;
+    transform: scale(1.05);
+}
+/* --- بداية الجزء المضاف --- */
+.btn-restore {
+    background-color: #2ecc71;
+    color: #ffffff;
+}
+.btn-restore:hover {
+    background-color: #27ae60;
+    transform: scale(1.05);
+}
+/* --- نهاية الجزء المضاف --- */
