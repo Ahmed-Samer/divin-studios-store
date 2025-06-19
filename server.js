@@ -21,7 +21,10 @@ const productSchema = new mongoose.Schema({
     sizes: [String]
 });
 
-const Product = mongoose.model('Product', productSchema);
+// --- الجزء المضاف لحل المشكلة ---
+// تعديل طريقة تعريف الموديل لتجنب الأخطاء في بيئة Vercel
+const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
+// --- نهاية الجزء المضاف ---
 
 const initialProducts = [
     { id: 1, name: 'Classic Fit Blazer', price: 1200, category: 'رجالي', images: ['/images/classicfitblazer1.jpg', '/images/classicfitblazer2.jpg', '/images/classicfitblazer3.jpg'], description: `خامة: 80% قطن – 20% بوليستر<br>ألوان: أسود، كحلي، رمادي<br>مثالي للمناسبات الرسمية والعمل`, sizes: ['S', 'M', 'L', 'XL'] },
@@ -81,10 +84,8 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
-// --- الجزء المضاف لحل المشكلة ---
 app.post('/api/products', async (req, res) => {
     try {
-        // البحث عن أعلى رقم ID موجود لإضافة واحد عليه
         const lastProduct = await Product.findOne().sort({ id: -1 });
         const newId = lastProduct ? lastProduct.id + 1 : 1;
 
@@ -107,7 +108,6 @@ app.post('/api/products', async (req, res) => {
         res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء إضافة المنتج' });
     }
 });
-// --- نهاية الجزء المضاف ---
 
 
 // Vercel يحتاج هذا السطر
