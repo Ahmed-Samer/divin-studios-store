@@ -8,8 +8,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// هذا السطر مهم ليخدم ملفات HTML و CSS والصور عند التشغيل المحلي
-app.use(express.static(path.join(__dirname)));
+// --- بداية التعديلات الرئيسية ---
+
+// 1. الاتصال بقاعدة البيانات أولاً عند بدء تشغيل التطبيق
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => {
+        console.log('تم الاتصال بقاعدة البيانات بنجاح!');
+        // بعد الاتصال الناجح، يتم التأكد من وجود المنتجات الأولية
+        seedInitialProducts();
+    })
+    .catch(err => {
+        console.error('فشل الاتصال بقاعدة البيانات:', err);
+    });
 
 const productSchema = new mongoose.Schema({
     id: { type: Number, required: true, unique: true },
@@ -21,10 +31,7 @@ const productSchema = new mongoose.Schema({
     sizes: [String]
 });
 
-// --- الجزء المضاف لحل المشكلة ---
-// تعديل طريقة تعريف الموديل لتجنب الأخطاء في بيئة Vercel
 const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
-// --- نهاية الجزء المضاف ---
 
 const initialProducts = [
     { id: 1, name: 'Classic Fit Blazer', price: 1200, category: 'رجالي', images: ['/images/classicfitblazer1.jpg', '/images/classicfitblazer2.jpg', '/images/classicfitblazer3.jpg'], description: `خامة: 80% قطن – 20% بوليستر<br>ألوان: أسود، كحلي، رمادي<br>مثالي للمناسبات الرسمية والعمل`, sizes: ['S', 'M', 'L', 'XL'] },
@@ -50,29 +57,19 @@ const initialProducts = [
     { id: 21, name: 'Unisex Winter Jacket', price: 950, category: 'اطفالي', images: ['/images/unisexwinterjacket1.jpg', '/images/unisexwinterjacket2.jpg'], description: `مبطن ودافئ جدًا<br>مقاوم للهواء والمطر<br>قبعة قابلة للإزالة<br>ألوان: أسود، أزرق، وردي`, sizes: ['S', 'M', 'L', 'XL'] }
 ];
 
-const connectDBAndStartServer = async () => {
+// دالة لإضافة المنتجات الأولية إذا كانت قاعدة البيانات فارغة
+async function seedInitialProducts() {
     try {
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log('تم الاتصال بقاعدة البيانات بنجاح!');
-        
         const productCount = await Product.countDocuments();
         if (productCount === 0) {
             console.log('قاعدة البيانات فارغة، سيتم إضافة المنتجات...');
             await Product.insertMany(initialProducts);
             console.log('تمت إضافة المنتجات الأولية بنجاح!');
         }
-
-        const PORT = process.env.PORT || 3000;
-        app.listen(PORT, () => {
-            console.log(`السيرفر المحلي يعمل الآن على البورت ${PORT}`);
-            console.log(`http://localhost:${PORT}`);
-        });
-
-    } catch (err) {
-        console.error('فشل الاتصال أو تشغيل السيرفر:', err);
+    } catch (error) {
+        console.error('خطأ أثناء إضافة المنتجات الأولية:', error);
     }
-};
-
+}
 
 // API Endpoints
 app.get('/api/products', async (req, res) => {
@@ -80,6 +77,7 @@ app.get('/api/products', async (req, res) => {
         const productsFromDB = await Product.find({});
         res.json(productsFromDB);
     } catch (error) {
+        console.error("خطأ في '/api/products' GET:", error);
         res.status(500).json({ message: 'فشل في جلب المنتجات' });
     }
 });
@@ -88,7 +86,6 @@ app.post('/api/products', async (req, res) => {
     try {
         const lastProduct = await Product.findOne().sort({ id: -1 });
         const newId = lastProduct ? lastProduct.id + 1 : 1;
-
         const productData = req.body;
         const newProduct = new Product({
             id: newId,
@@ -99,21 +96,26 @@ app.post('/api/products', async (req, res) => {
             images: productData.images,
             sizes: productData.sizes
         });
-
         const savedProduct = await newProduct.save();
-        res.status(201).json(savedProduct); // 201 Created
-
+        res.status(201).json(savedProduct);
     } catch (error) {
-        console.error('خطأ في إضافة المنتج:', error);
+        console.error("خطأ في '/api/products' POST:", error);
         res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء إضافة المنتج' });
     }
 });
 
+// هذا السطر مهم ليخدم ملفات HTML و CSS والصور
+app.use(express.static(path.join(__dirname)));
 
-// Vercel يحتاج هذا السطر
+// Vercel يحتاج هذا السطر لتصدير التطبيق
 module.exports = app;
 
-// هذا الشرط يمنع تشغيل السيرفر مرتين على Vercel ولكنه يسمح بالتشغيل المحلي
+// هذا الشرط يسمح بالتشغيل المحلي فقط
 if (require.main === module) {
-    connectDBAndStartServer();
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`السيرفر المحلي يعمل الآن على البورت ${PORT}`);
+        console.log(`http://localhost:${PORT}`);
+    });
 }
+// --- نهاية التعديلات الرئيسية ---
