@@ -18,6 +18,7 @@ mongoose.connect(process.env.MONGO_URI)
         console.error('فشل الاتصال بقاعدة البيانات:', err);
     });
 
+// --- Product Schema and Model ---
 const productSchema = new mongoose.Schema({
     id: { type: Number, required: true, unique: true },
     name: { type: String, required: true },
@@ -30,6 +31,36 @@ const productSchema = new mongoose.Schema({
 });
 
 const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
+
+
+// --- Order Schema and Model (بداية الجزء الجديد) ---
+const orderSchema = new mongoose.Schema({
+    customerDetails: {
+        fullName: { type: String, required: true },
+        phone: { type: String, required: true },
+        address: { type: String, required: true },
+        governorate: { type: String, required: true },
+        city: { type: String, required: true }
+    },
+    products: [{
+        productId: { type: Number, required: true },
+        name: { type: String, required: true },
+        price: { type: Number, required: true },
+        quantity: { type: Number, required: true },
+        size: { type: String, required: true }
+    }],
+    totalPrice: { type: Number, required: true },
+    status: { 
+        type: String, 
+        default: 'قيد المراجعة', 
+        enum: ['قيد المراجعة', 'تم التأكيد', 'تم الشحن', 'تم التوصيل', 'ملغي'] 
+    },
+    createdAt: { type: Date, default: Date.now }
+});
+
+const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
+// --- (نهاية الجزء الجديد) ---
+
 
 const initialProducts = [
     // ... محتوى المنتجات الأولية كما هو بدون تغيير ...
@@ -52,7 +83,7 @@ const initialProducts = [
     { id: 17, name: 'Kids Zip-Up Hoodie', price: 380, category: 'اطفالي', images: ['/images/kidszipuphoodie1.jpg', '/images/kidszipuphoodie2.jpg'], description: `خامة دافئة<br>قبعة + سوستة<br>مناسب للأولاد والبنات<br>ألوان: رمادي، كحلي، موف`, sizes: ['S', 'M', 'L'] },
     { id: 18, name: 'Baby Romper Set', price: 320, category: 'اطفالي', images: ['/images/babyromperset1.jpg', '/images/babyromperset2.jpg'], description: `قطعة واحدة + قبعة<br>خامة ناعمة آمنة للرضع<br>سن: 0–24 شهر<br>ألوان: سماوي، أبيض، أصفر`, sizes: ['0-6M', '6-12M', '12-24M'] },
     { id: 19, name: 'Boys Cargo Shorts', price: 300, category: 'اطفالي', images: ['/images/boyscargoshorts1.jpg', '/images/boyscargoshorts2.jpg'], description: `قطن قوي<br>جيوب جانبية<br>ألوان: بيج، زيتي، كاكي<br>مثالي للعب والحركة`, sizes: ['4Y', '6Y', '8Y', '10Y'] },
-    { id: 20, 'Girls Leggings Pack (2pcs)': 'اطفالي', images: ['/images/girlsleggingspack1.jpg', '/images/girlsleggingspack2.jpg'], description: `خامة مطاطية ومريحة<br>تصميمات مرحة<br>من 4–12 سنة<br>ألوان متنوعة`, sizes: ['4-5Y', '6-7Y', '8-9Y'] },
+    { id: 20, name: 'Girls Leggings Pack (2pcs)', price: 220, category: 'اطفالي', images: ['/images/girlsleggingspack1.jpg', '/images/girlsleggingspack2.jpg'], description: `خامة مطاطية ومريحة<br>تصميمات مرحة<br>من 4–12 سنة<br>ألوان متنوعة`, sizes: ['4-5Y', '6-7Y', '8-9Y'] },
     { id: 21, name: 'Unisex Winter Jacket', price: 950, category: 'اطفالي', images: ['/images/unisexwinterjacket1.jpg', '/images/unisexwinterjacket2.jpg'], description: `مبطن ودافئ جدًا<br>مقاوم للهواء والمطر<br>قبعة قابلة للإزالة<br>ألوان: أسود، أزرق، وردي`, sizes: ['S', 'M', 'L', 'XL'] }
 ];
 
@@ -69,17 +100,17 @@ async function seedInitialProducts() {
     }
 }
 
-// جلب المنتجات النشطة فقط (الغير محذوفة أو القديمة التي لا تحتوي على الحقل)
+// --- API Routes ---
+
+// جلب المنتجات النشطة فقط
 app.get('/api/products', async (req, res) => {
     try {
-        // --- بداية التعديل ---
         const productsFromDB = await Product.find({ 
             $or: [
                 { isDeleted: false }, 
                 { isDeleted: { $exists: false } }
             ] 
         });
-        // --- نهاية التعديل ---
         res.json(productsFromDB);
     } catch (error) {
         console.error("خطأ في '/api/products' GET:", error);
@@ -98,6 +129,7 @@ app.get('/api/products/deleted', async (req, res) => {
     }
 });
 
+// إضافة منتج جديد
 app.post('/api/products', async (req, res) => {
     try {
         const lastProduct = await Product.findOne().sort({ id: -1 });
@@ -105,12 +137,7 @@ app.post('/api/products', async (req, res) => {
         const productData = req.body;
         const newProduct = new Product({
             id: newId,
-            name: productData.name,
-            price: productData.price,
-            category: productData.category,
-            description: productData.description,
-            images: productData.images,
-            sizes: productData.sizes
+            ...productData
         });
         const savedProduct = await newProduct.save();
         res.status(201).json(savedProduct);
@@ -120,6 +147,7 @@ app.post('/api/products', async (req, res) => {
     }
 });
 
+// تعديل منتج حالي
 app.put('/api/products/:id', async (req, res) => {
     try {
         const productId = req.params.id;
@@ -135,6 +163,7 @@ app.put('/api/products/:id', async (req, res) => {
     }
 });
 
+// حذف ناعم لمنتج
 app.delete('/api/products/:id', async (req, res) => {
     try {
         const productId = req.params.id;
@@ -149,6 +178,7 @@ app.delete('/api/products/:id', async (req, res) => {
     }
 });
 
+// استرجاع منتج محذوف
 app.post('/api/products/:id/restore', async (req, res) => {
     try {
         const productId = req.params.id;
@@ -163,7 +193,60 @@ app.post('/api/products/:id/restore', async (req, res) => {
     }
 });
 
+
+// --- Order Creation API (بداية الجزء الجديد) ---
+app.post('/api/orders', async (req, res) => {
+    try {
+        const { customerDetails, cartItems } = req.body;
+
+        if (!customerDetails || !cartItems || cartItems.length === 0) {
+            return res.status(400).json({ message: 'البيانات المرسلة غير كاملة أو السلة فارغة.' });
+        }
+        
+        const productIds = cartItems.map(item => item.id);
+        const productsFromDB = await Product.find({ 'id': { $in: productIds } });
+
+        let totalPrice = 0;
+        const orderedProducts = cartItems.map(item => {
+            const product = productsFromDB.find(p => p.id == item.id);
+            if (!product) {
+                throw new Error(`منتج رقم ${item.id} غير موجود`);
+            }
+            totalPrice += product.price * item.quantity;
+            return {
+                productId: product.id,
+                name: product.name,
+                price: product.price,
+                quantity: item.quantity,
+                size: item.size,
+            };
+        });
+
+        const newOrder = new Order({
+            customerDetails: customerDetails,
+            products: orderedProducts,
+            totalPrice: totalPrice
+        });
+
+        const savedOrder = await newOrder.save();
+        res.status(201).json(savedOrder);
+
+    } catch (error) {
+        console.error("خطأ في '/api/orders' POST:", error);
+        res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء إنشاء الطلب' });
+    }
+});
+// --- (نهاية الجزء الجديد) ---
+
+
+// Static Files & Server Initialization
 app.use(express.static(path.join(__dirname)));
+
+// Catch-all to serve index.html for any other request (useful for client-side routing)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 
 module.exports = app;
 
