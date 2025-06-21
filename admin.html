@@ -27,7 +27,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="price">السعر (بالأرقام فقط)</label>
-                            <input type="number" id="price" required>
+                            <input type="number" id="price" required min="0">
                         </div>
                         <div class="form-group">
                             <label for="category">القسم</label>
@@ -39,18 +39,23 @@
                             </select>
                         </div>
                     </div>
+                    
                     <div class="form-group">
                         <label for="description">الوصف</label>
                         <textarea id="description" rows="4" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>المقاسات والكميات المتاحة</label>
+                        <div id="sizes-stock-container">
+                            </div>
+                        <button type="button" class="btn btn-secondary" id="add-size-btn" style="margin-top: 10px;">+ إضافة مقاس وكمية</button>
                     </div>
                     <div class="form-group">
                         <label for="images">روابط الصور (افصل بين كل رابط وآخر بفاصلة ,)</label>
                         <textarea id="images" rows="3" placeholder="/images/image1.jpg, /images/image2.jpg, ..."></textarea>
                     </div>
-                    <div class="form-group">
-                        <label for="sizes">المقاسات المتاحة (افصل بين كل مقاس وآخر بفاصلة ,)</label>
-                        <input type="text" id="sizes" placeholder="S,M,L,XL,...">
-                    </div>
+                    
                     <button type="submit" class="btn" id="submit-btn">إضافة المنتج</button>
                     <button type="button" class="btn btn-secondary" id="cancel-edit-btn" style="display: none;">إلغاء التعديل</button>
                 </form>
@@ -74,13 +79,20 @@
             </div>
 
             <div class="admin-section">
+                <h2>إدارة الطلبات الجديدة</h2>
+                <div id="manage-orders-list">
+                    </div>
+            </div>
+
+            <div class="admin-section">
                 <h2>المنتجات المحذوفة مؤقتًا (سلة المحذوفات)</h2>
                 <div id="deleted-products-list">
                     </div>
             </div>
-            </main>
+        </main>
     </div>
 
+    <div id="toast-container"></div>
     <script src="script.js"></script>
 </body>
 </html>
