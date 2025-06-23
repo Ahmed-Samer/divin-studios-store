@@ -143,23 +143,20 @@ function runPageSpecificLogic(products) {
     if (document.getElementById('profile-page-container')) {
         initializeProfilePage();
     }
-    // --- بداية الجزء الجديد: إضافة منطق صفحة التواصل ---
     if (document.getElementById('contact-form')) {
         initializeContactForm();
     }
-    // --- نهاية الجزء الجديد ---
 }
 
 
-// --- بداية الجزء الجديد: دالة تشغيل فورم التواصل ---
 function initializeContactForm() {
     const contactForm = document.getElementById('contact-form');
     const submitBtn = document.getElementById('contact-submit-btn');
+    if (!contactForm) return;
 
-    // ضع الأكواد الخاصة بك هنا
-    const publicKey = 'LZePcExeLCFN4FrpM';
-    const serviceID = 'service_b4ht9cf';
-    const templateID = 'template_zwqd2g8';
+    const publicKey = 'YOUR_PUBLIC_KEY';
+    const serviceID = 'YOUR_SERVICE_ID';
+    const templateID = 'YOUR_TEMPLATE_ID';
 
     emailjs.init({ publicKey: publicKey });
 
@@ -183,7 +180,6 @@ function initializeContactForm() {
             });
     });
 }
-// --- نهاية الجزء الجديد ---
 
 
 function renderProducts(productsToRender, containerId = '.product-grid') {
@@ -267,7 +263,9 @@ async function initializeProductDetailPage(productId, allProducts) {
             document.title = `${product.name} - Zantiva Store`;
 
             const sliderWrapper = document.querySelector('.slider-wrapper');
-            sliderWrapper.innerHTML = product.images.map(imgSrc => `<img src="${imgSrc}" alt="${product.name}">`).join('');
+            sliderWrapper.innerHTML = product.images.map(imgSrc => 
+                `<div class="slide"><img src="${imgSrc}" alt="${product.name}"></div>`
+            ).join('');
             setupImageSlider(sliderWrapper);
 
             const sizeSelector = document.querySelector('.size-selector');
@@ -344,9 +342,10 @@ function setupQuantitySelector() {
     });
 }
 
+// --- بداية الجزء المعدل: إعادة كتابة دالة الـ Slider بالكامل ---
 function setupImageSlider(sliderWrapper) {
     let currentIndex = 0;
-    const slides = sliderWrapper.children;
+    const slides = sliderWrapper.children; // الآن هذه هي عناصر .slide
     const totalSlides = slides.length;
     const nextBtn = document.querySelector('.slider-btn.next');
     const prevBtn = document.querySelector('.slider-btn.prev');
@@ -360,9 +359,20 @@ function setupImageSlider(sliderWrapper) {
     if(nextBtn) nextBtn.style.display = 'block'; 
     if(prevBtn) prevBtn.style.display = 'block';
 
+    // دالة جديدة لإظهار وإخفاء الصور
     function showSlide(index) {
-        sliderWrapper.style.transform = `translateX(-${index * 100}%)`;
+        // أولاً، قم بإخفاء كل الصور
+        for (let slide of slides) {
+            slide.classList.remove('active-slide');
+        }
+        // ثانيًا، أظهر الصورة المطلوبة فقط
+        if (slides[index]) {
+            slides[index].classList.add('active-slide');
+        }
     }
+
+    // إظهار الصورة الأولى عند تحميل الصفحة
+    showSlide(currentIndex);
 
     if(nextBtn) nextBtn.addEventListener('click', () => {
         currentIndex = (currentIndex + 1) % totalSlides;
@@ -374,3 +384,4 @@ function setupImageSlider(sliderWrapper) {
         showSlide(currentIndex);
     });
 }
+// --- نهاية الجزء المعدل ---

@@ -7,7 +7,7 @@ let authToken = ''; // متغير لتخزين توكن الأدمن
 
 // الدالة الرئيسية اللي بتشغل كل حاجة في صفحة الأدمن
 export function initializeAdminPage(products) {
-    // --- بداية الجزء الجديد: التحقق من صلاحيات الأدمن في الواجهة ---
+    // التحقق من صلاحيات الأدمن في الواجهة
     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
     if (!userInfo || !userInfo.token || !userInfo.isAdmin) {
         showToast('غير مصرح لك بالدخول لهذه الصفحة.', true);
@@ -16,7 +16,6 @@ export function initializeAdminPage(products) {
         return;
     }
     authToken = userInfo.token; // تخزين التوكن لاستخدامه في كل الطلبات
-    // --- نهاية الجزء الجديد ---
 
     allProducts = products;
     setupAdminEventListeners();
@@ -293,12 +292,23 @@ async function handleProductFormSubmit(event) {
         return;
     }
 
+    // --- بداية الجزء المعدل: تحسين طريقة تحليل روابط الصور بشكل أفضل ---
+    const images_text = document.getElementById('images').value;
+    const initial_array = images_text
+        .split(/[\s,]+/) // التقسيم باستخدام أي مسافة أو فاصلة
+        .map(item => item.trim())
+        .filter(Boolean);
+    
+    // إزالة أي روابط مكررة
+    const images_array = [...new Set(initial_array)];
+    // --- نهاية الجزء المعدل ---
+
     const productData = {
         name: document.getElementById('name').value,
         price: parseFloat(document.getElementById('price').value),
         category: document.getElementById('category').value,
         description: document.getElementById('description').value.replace(/\n/g, '<br>'),
-        images: document.getElementById('images').value.split(',').map(item => item.trim()).filter(Boolean),
+        images: images_array,
         sizes: sizes,
     };
 
