@@ -201,7 +201,17 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 .quantity-selector .quantity-btn:hover { background-color: #3a5b8e; }
 .quantity-selector input { width: 50px; height: 40px; text-align: center; background-color: transparent; border: 1px solid #3a5b8e; color: #ccd6f6; font-size: 18px; font-weight: bold; border-radius: 8px; -moz-appearance: textfield; }
 .quantity-selector input::-webkit-outer-spin-button, .quantity-selector input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.product-image-gallery { position: relative; width: 100%; overflow: hidden; border-radius: 8px; }
+
+/* --- بداية الجزء المعدل --- */
+.product-image-gallery { 
+    position: relative; 
+    width: 100%; 
+    overflow: hidden; 
+    border-radius: 8px; 
+    aspect-ratio: 1 / 1; /* هذا هو السطر الجديد والمهم */
+}
+/* --- نهاية الجزء المعدل --- */
+
 .slider-wrapper { display: flex; transition: transform 0.5s ease-in-out; }
 .slider-wrapper img { width: 100%; height: 100%; object-fit: cover; flex-shrink: 0; display: block; }
 .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(17, 34, 64, 0.5); color: white; border: none; cursor: pointer; padding: 15px; font-size: 24px; z-index: 10; transition: background-color 0.3s ease; }
@@ -254,7 +264,6 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
     .form-row { flex-direction: column; gap: 0; }
 }
 
-/* --- بداية الجزء المصحح بالكامل --- */
 @media (max-width: 768px) { 
     .navbar { flex-wrap: nowrap; } 
     .nav-section.middle { flex-grow: 1; text-align: center; } 
@@ -276,7 +285,7 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 
     .main-header.menu-is-open .expanded-links {
         display: flex;
-        left: 0; /* Changed from right to left */
+        left: 0;
     }
     
     .search-overlay { position: absolute; top: 100%; left: 0; width: 100%; background-color: #0a192f; padding: 15px 5%; box-sizing: border-box; box-shadow: 0 4px 8px rgba(0,0,0,0.2); display: none; } 
@@ -294,9 +303,8 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
     .page-content { padding: 20px 3%; }
     .cart-item { flex-direction: column; align-items: center; text-align: center; }
     .cart-item-price { margin: 10px 0; }
-    .cart-item-quantity { justify-content: center; } /* إصلاح مكان أزرار الكمية */
+    .cart-item-quantity { justify-content: center; } 
 }
-/* --- نهاية الجزء المصحح بالكامل --- */
 
 
 /* --- إدارة المنتجات (صفحة الأدمن) --- */
