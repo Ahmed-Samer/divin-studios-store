@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تفاصيل المنتج - Zantiva Store</title>
+    <title>حسابي - Zantiva Store</title>
     <link rel="icon" type="image/png" href="images/favicon.png">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -44,45 +44,24 @@
     </header>
 
     <main class="page-content">
-        <div class="product-detail-container">
-            <div class="product-detail-layout">
-                <div class="product-image-gallery">
-                    <div class="slider-wrapper"></div>
-                    <button class="slider-btn prev">&#10094;</button>
-                    <button class="slider-btn next">&#10095;</button>
-                </div>
-                <div class="product-info-container">
-                    <h1 class="product-title-large">جاري تحميل المنتج...</h1>
-                    <p class="product-price-large">...</p>
-                    <div class="product-description"><p>جاري تحميل التفاصيل...</p></div>
-                    
-                    <div class="product-options">
-                        <div class="option-group">
-                            <label>المقاس:</label>
-                            <div class="size-selector">
-                            </div>
-                        </div>
-                        
-                        <div class="option-group">
-                            <label>الكمية:</label>
-                            <div class="quantity-selector">
-                                <button class="quantity-btn" id="minus-btn">-</button>
-                                <input type="number" id="quantity-input" value="1" min="1" readonly>
-                                <button class="quantity-btn" id="plus-btn">+</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button class="add-to-cart-btn">أضف إلى السلة</button>
+        <div class="static-page-container" id="profile-page-container">
+            <h1>حسابي</h1>
+            
+            <div class="admin-section">
+                <h2>معلومات الحساب</h2>
+                <div id="user-details-content" class="order-details-grid" style="grid-template-columns: 1fr;">
+                    <p><strong>الاسم:</strong> <span id="profile-name">جاري التحميل...</span></p>
+                    <p><strong>البريد الإلكتروني:</strong> <span id="profile-email">جاري التحميل...</span></p>
                 </div>
             </div>
 
-            <div class="related-products-section">
-                <h2>منتجات قد تعجبك أيضًا</h2>
-                <div id="related-products-grid" class="product-grid">
-                    </div>
+            <div class="admin-section">
+                <h2>طلباتي السابقة</h2>
+                <div id="my-orders-list">
+                    <p>جاري تحميل طلباتك...</p>
+                </div>
             </div>
-            </div>
+        </div>
     </main>
 
     <footer class="main-footer">
@@ -97,7 +76,6 @@
     </footer>
 
     <div id="toast-container"></div>
-<script type="module" src="js/main.js"></script>
-
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>

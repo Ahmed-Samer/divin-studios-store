@@ -8,39 +8,39 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    
-    <header class="main-header">
-        <nav class="navbar">
-            <div class="nav-section right">
-                <ul class="expanded-links">
-                    <li><a href="index.html?category=رجالي">رجالي</a></li>
-                    <li><a href="index.html?category=نسائي">نسائي</a></li>
-                    <li><a href="index.html?category=اطفالي">أطفال</a></li>
-                    <li><a href="about.html">عن المتجر</a></li>
-                    <li><a href="contact.html">تواصل معنا</a></li>
-                </ul>
-                <button class="menu-toggle-btn">الأقسام ☰</button>
-            </div>
-            <div class="nav-section middle">
-                <a href="index.html" class="logo">Zantiva Store</a>
-            </div>
-            <div class="nav-section left">
-                <div class="search-container">
-                    <input type="search" id="search-bar" placeholder="ابحث عن منتج...">
-                </div>
-                <button class="search-toggle-btn">🔍</button>
-                <a href="cart.html" class="cart-link">
-                    <span class="cart-icon">🛒</span>
-                    <span class="cart-count">0</span>
-                </a>
-            </div>
-        </nav>
-        <div class="search-overlay">
-            <input type="search" id="mobile-search-bar" placeholder="ابحث عن منتجك المفضل...">
+<header class="main-header">
+    <nav class="navbar">
+        <div class="nav-section right">
+            <ul class="expanded-links">
+                <li><a href="index.html?category=رجالي">رجالي</a></li>
+                <li><a href="index.html?category=نسائي">نسائي</a></li>
+                <li><a href="index.html?category=اطفالي">أطفال</a></li>
+                <li><a href="about.html">عن المتجر</a></li>
+                <li><a href="contact.html">تواصل معنا</a></li>
+                <div id="user-navigation-links-mobile"></div> 
+            </ul>
+            <button class="menu-toggle-btn">الأقسام ☰</button>
         </div>
-    </header>
-
-    <main class="page-content">
+        <div class="nav-section middle">
+            <a href="index.html" class="logo">Zantiva Store</a>
+        </div>
+        <div class="nav-section left">
+            <div id="user-actions" class="user-actions">
+                </div>
+            <a href="cart.html" class="cart-link">
+                <span class="cart-icon">🛒</span>
+                <span class="cart-count">0</span>
+            </a>
+             <div class="search-container">
+                <input type="search" id="search-bar" placeholder="ابحث عن منتج...">
+            </div>
+            <button class="search-toggle-btn">🔍</button>
+        </div>
+    </nav>
+    <div class="search-overlay">
+        <input type="search" id="mobile-search-bar" placeholder="ابحث عن منتجك المفضل...">
+    </div>
+</header>    <main class="page-content">
         <div class="product-grid">
             </div>
     </main>
@@ -56,6 +56,8 @@
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <div id="toast-container"></div>
+<script type="module" src="js/main.js"></script>
+
 </body>
 </html>
