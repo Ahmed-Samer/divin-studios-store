@@ -294,7 +294,7 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 /* --- تصميم الصفحات الثابتة ولوحة التحكم --- */
 .static-page-container, .admin-page-container { background-color: #112240; padding: 40px; border-radius: 8px; max-width: 900px; margin: 40px auto; }
 .about-content p, .contact-info p { font-size: 18px; line-height: 1.8; margin-bottom: 20px; }
-.about-content h2, .contact-info h2, .contact-form-container h2, .admin-section h2 { font-size: 28px; color: #64ffda; margin-top: 40px; margin-bottom: 20px; border-bottom: 1px solid #3a5b8e; padding-bottom: 5px; }
+.about-content h2, .contact-info h2, .contact-form-container h2 { font-size: 28px; color: #64ffda; margin-top: 40px; margin-bottom: 20px; border-bottom: 1px solid #3a5b8e; padding-bottom: 5px; }
 .about-content ul, .contact-info ul { list-style: none; padding-right: 20px; margin-bottom: 20px; }
 .about-content ul li, .contact-info ul li { font-size: 18px; margin-bottom: 15px; position: relative; }
 .about-content ul li::before { content: '✓'; color: #64ffda; position: absolute; right: -25px; }
@@ -338,20 +338,18 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 .accordion-header:hover, .accordion-header.active {
     background-color: #2a4162;
 }
-/* --- بداية الجزء المعدل --- */
 .accordion-header span:first-child {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    flex-grow: 1; /* السماح للنص بأخذ المساحة المتاحة */
+    flex-grow: 1;
 }
-/* --- نهاية الجزء المعدل --- */
 .accordion-header .accordion-icon {
     font-size: 28px;
     font-weight: 300;
     color: #64ffda;
     transition: transform 0.3s ease-in-out;
-    flex-shrink: 0; /* منع الأيقونة من التقلص */
+    flex-shrink: 0;
     margin-right: 15px;
 }
 .accordion-header.active .accordion-icon {
@@ -381,23 +379,28 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
     .nav-section.middle { flex-grow: 1; text-align: center; } 
     .nav-section.right { flex-basis: 33%; justify-content: flex-start; }
     .nav-section.left { flex-basis: 33%; justify-content: flex-end; gap: 10px; }
+
     .logo { font-size: 22px; } 
+
     .search-container { display: none; } 
     .search-toggle-btn { display: block; } 
-    .user-actions .btn, .welcome-user { display: none; }
-    .user-dropdown-button { 
-        display: flex;
-        padding: 6px 10px;
-        font-size: 13px;
-        gap: 5px;
+    
+    /* --- بداية الجزء المعدل --- */
+    /* إخفاء أزرار الدخول والتسجيل، وأيضًا زر قائمة المستخدم من الهيدر الرئيسي في الموبايل */
+    .user-actions { 
+        display: none; 
     }
+    /* --- نهاية الجزء المعدل --- */
+
     .main-header.menu-is-open .expanded-links {
         display: flex;
         left: 0;
     }
+    
     .search-overlay { position: absolute; top: 100%; left: 0; width: 100%; background-color: #0a192f; padding: 15px 5%; box-sizing: border-box; box-shadow: 0 4px 8px rgba(0,0,0,0.2); display: none; } 
     .main-header.search-active .search-overlay { display: block; } 
     #mobile-search-bar { width: 100%; background-color: #2a4162; border: 1px solid #64ffda; color: #ccd6f6; padding: 12px 15px; border-radius: 20px; outline: none; } 
+    
     .product-detail-layout { grid-template-columns: 1fr; } 
     .product-title-large { font-size: 32px; } 
     .slider-btn { padding: 10px; font-size: 20px; } 
