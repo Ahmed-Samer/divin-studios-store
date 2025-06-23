@@ -5,9 +5,46 @@ let allOrders = [];
 let currentAdminCategoryFilter = 'all';
 let authToken = ''; // متغير لتخزين توكن الأدمن
 
+// --- بداية الجزء الجديد: دالة تشغيل الأكورديون ---
+function setupAccordion() {
+    const accordionHeaders = document.querySelectorAll('.accordion-header');
+
+    accordionHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const content = header.nextElementSibling;
+
+            // إغلاق أي قسم آخر مفتوح (اختياري، لكنه يحسن التجربة)
+            const currentlyActiveHeader = document.querySelector('.accordion-header.active');
+            if (currentlyActiveHeader && currentlyActiveHeader !== header) {
+                currentlyActiveHeader.classList.remove('active');
+                const activeContent = currentlyActiveHeader.nextElementSibling;
+                activeContent.style.maxHeight = null;
+                activeContent.classList.remove('active');
+            }
+
+            // فتح أو إغلاق القسم الذي تم الضغط عليه
+            header.classList.toggle('active');
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+                content.classList.remove('active');
+            } else {
+                content.classList.add('active');
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        });
+    });
+
+    // فتح القسم الأول (إضافة منتج) بشكل افتراضي عند تحميل الصفحة
+    const firstHeader = document.querySelector('.accordion-header');
+    if (firstHeader) {
+        firstHeader.click();
+    }
+}
+// --- نهاية الجزء الجديد ---
+
+
 // الدالة الرئيسية اللي بتشغل كل حاجة في صفحة الأدمن
 export function initializeAdminPage(products) {
-    // التحقق من صلاحيات الأدمن في الواجهة
     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
     if (!userInfo || !userInfo.token || !userInfo.isAdmin) {
         showToast('غير مصرح لك بالدخول لهذه الصفحة.', true);
@@ -15,10 +52,11 @@ export function initializeAdminPage(products) {
         setTimeout(() => { window.location.href = 'index.html'; }, 2500);
         return;
     }
-    authToken = userInfo.token; // تخزين التوكن لاستخدامه في كل الطلبات
+    authToken = userInfo.token;
 
     allProducts = products;
     setupAdminEventListeners();
+    setupAccordion(); // استدعاء دالة تشغيل الأكورديون
     resetAdminForm();
     displayAdminOrders();
     displayDeletedProducts();
@@ -254,11 +292,21 @@ function handleEditProduct(id) {
     } else {
         addSizeStockRow();
     }
+    
+    // --- بداية الجزء المعدل: تحديث selector الخاص بعنوان الفورم ---
+    document.getElementById('form-title-accordion').textContent = `تعديل المنتج: ${product.name}`;
+    // --- نهاية الجزء المعدل ---
 
-    document.getElementById('form-title').textContent = `تعديل المنتج: ${product.name}`;
     document.getElementById('submit-btn').textContent = 'تحديث المنتج';
     document.getElementById('cancel-edit-btn').style.display = 'inline-block';
-    document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' });
+    
+    // فتح قسم الفورم عند الضغط على تعديل
+    const formHeader = document.getElementById('form-section-header');
+    if(formHeader && !formHeader.classList.contains('active')) {
+        formHeader.click();
+    }
+
+    formHeader.scrollIntoView({ behavior: 'smooth' });
 }
 
 function resetAdminForm() { 
@@ -268,7 +316,11 @@ function resetAdminForm() {
     document.getElementById('sizes-stock-container').innerHTML = '';
     addSizeStockRow(); 
     document.getElementById('product-id').value = '';
-    document.getElementById('form-title').textContent = 'إضافة منتج جديد';
+    
+    // --- بداية الجزء المعدل: تحديث selector الخاص بعنوان الفورم ---
+    document.getElementById('form-title-accordion').textContent = 'إضافة منتج جديد';
+    // --- نهاية الجزء المعدل ---
+
     document.getElementById('submit-btn').textContent = 'إضافة المنتج';
     document.getElementById('cancel-edit-btn').style.display = 'none';
 }
@@ -291,17 +343,13 @@ async function handleProductFormSubmit(event) {
         showToast('يجب إضافة مقاس واحد على الأقل للمنتج.', true);
         return;
     }
-
-    // --- بداية الجزء المعدل: تحسين طريقة تحليل روابط الصور بشكل أفضل ---
+    
     const images_text = document.getElementById('images').value;
     const initial_array = images_text
-        .split(/[\s,]+/) // التقسيم باستخدام أي مسافة أو فاصلة
+        .split(/[\s,]+/)
         .map(item => item.trim())
         .filter(Boolean);
-    
-    // إزالة أي روابط مكررة
     const images_array = [...new Set(initial_array)];
-    // --- نهاية الجزء المعدل ---
 
     const productData = {
         name: document.getElementById('name').value,

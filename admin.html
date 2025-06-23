@@ -15,85 +15,104 @@
         </header>
 
         <main class="admin-content">
-            <div class="admin-section" id="form-section">
-                <h2 id="form-title">إضافة منتج جديد</h2>
-                <form id="add-product-form" class="checkout-form">
-                    <input type="hidden" id="product-id">
-                    
-                    <div class="form-group">
-                        <label for="name">اسم المنتج</label>
-                        <input type="text" id="name" required>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="price">السعر (بالأرقام فقط)</label>
-                            <input type="number" id="price" required min="0">
-                        </div>
-                        <div class="form-group">
-                            <label for="category">القسم</label>
-                            <select id="category" required>
-                                <option value="" disabled selected>اختر القسم</option>
-                                <option value="رجالي">رجالي</option>
-                                <option value="نسائي">نسائي</option>
-                                <option value="اطفالي">أطفال</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="description">الوصف</label>
-                        <textarea id="description" rows="4" required></textarea>
-                    </div>
+            <div class="admin-accordion">
 
-                    <div class="form-group">
-                        <label>المقاسات والكميات المتاحة</label>
-                        <div id="sizes-stock-container">
+                <div class="accordion-item">
+                    <button class="accordion-header">
+                        <span id="form-title-accordion">إضافة منتج جديد</span>
+                        <span class="accordion-icon">+</span>
+                    </button>
+                    <div class="accordion-content">
+                        <form id="add-product-form" class="checkout-form">
+                            <input type="hidden" id="product-id">
+                            
+                            <div class="form-group">
+                                <label for="name">اسم المنتج</label>
+                                <input type="text" id="name" required>
                             </div>
-                        <button type="button" class="btn btn-secondary" id="add-size-btn" style="margin-top: 10px;">+ إضافة مقاس وكمية</button>
-                    </div>
-                    <div class="form-group">
-                        <label for="images">روابط الصور (افصل بين كل رابط وآخر بفاصلة ,)</label>
-                        <textarea id="images" rows="3" placeholder="/images/image1.jpg, /images/image2.jpg, ..."></textarea>
-                    </div>
-                    
-                    <button type="submit" class="btn" id="submit-btn">إضافة المنتج</button>
-                    <button type="button" class="btn btn-secondary" id="cancel-edit-btn" style="display: none;">إلغاء التعديل</button>
-                </form>
-            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="price">السعر (بالأرقام فقط)</label>
+                                    <input type="number" id="price" required min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="category">القسم</label>
+                                    <select id="category" required>
+                                        <option value="" disabled selected>اختر القسم</option>
+                                        <option value="رجالي">رجالي</option>
+                                        <option value="نسائي">نسائي</option>
+                                        <option value="اطفالي">أطفال</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="description">الوصف</label>
+                                <textarea id="description" rows="4" required></textarea>
+                            </div>
 
-            <div class="admin-section">
-                <h2>إدارة المنتجات الحالية</h2>
-                <div class="admin-controls">
-                    <div class="admin-filters">
-                        <button class="filter-btn active" data-category="all">الكل</button>
-                        <button class="filter-btn" data-category="رجالي">رجالي</button>
-                        <button class="filter-btn" data-category="نسائي">نسائي</button>
-                        <button class="filter-btn" data-category="اطفالي">أطفال</button>
-                    </div>
-                    <div class="admin-search">
-                        <input type="search" id="admin-search-bar" placeholder="ابحث عن منتج بالاسم...">
+                            <div class="form-group">
+                                <label>المقاسات والكميات المتاحة</label>
+                                <div id="sizes-stock-container"></div>
+                                <button type="button" class="btn btn-secondary" id="add-size-btn" style="margin-top: 10px;">+ إضافة مقاس وكمية</button>
+                            </div>
+                            <div class="form-group">
+                                <label for="images">روابط الصور (افصل بين كل رابط بفاصلة أو مسافة أو سطر جديد)</label>
+                                <textarea id="images" rows="3" placeholder="/images/image1.jpg, /images/image2.jpg, ..."></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn" id="submit-btn">إضافة المنتج</button>
+                            <button type="button" class="btn btn-secondary" id="cancel-edit-btn" style="display: none;">إلغاء التعديل</button>
+                        </form>
                     </div>
                 </div>
-                <div id="manage-products-list">
-                    </div>
-            </div>
 
-            <div class="admin-section">
-                <h2>إدارة الطلبات الجديدة</h2>
-                <div id="manage-orders-list">
+                <div class="accordion-item">
+                    <button class="accordion-header">
+                        <span>إدارة المنتجات الحالية</span>
+                        <span class="accordion-icon">+</span>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="admin-controls">
+                            <div class="admin-filters">
+                                <button class="filter-btn active" data-category="all">الكل</button>
+                                <button class="filter-btn" data-category="رجالي">رجالي</button>
+                                <button class="filter-btn" data-category="نسائي">نسائي</button>
+                                <button class="filter-btn" data-category="اطفالي">أطفال</button>
+                            </div>
+                            <div class="admin-search">
+                                <input type="search" id="admin-search-bar" placeholder="ابحث عن منتج بالاسم...">
+                            </div>
+                        </div>
+                        <div id="manage-products-list"></div>
                     </div>
-            </div>
+                </div>
 
-            <div class="admin-section">
-                <h2>المنتجات المحذوفة مؤقتًا (سلة المحذوفات)</h2>
-                <div id="deleted-products-list">
+                <div class="accordion-item">
+                    <button class="accordion-header">
+                        <span>إدارة الطلبات</span>
+                        <span class="accordion-icon">+</span>
+                    </button>
+                    <div class="accordion-content">
+                        <div id="manage-orders-list"></div>
                     </div>
+                </div>
+
+                <div class="accordion-item">
+                    <button class="accordion-header">
+                        <span>المنتجات المحذوفة (سلة المحذوفات)</span>
+                        <span class="accordion-icon">+</span>
+                    </button>
+                    <div class="accordion-content">
+                        <div id="deleted-products-list"></div>
+                    </div>
+                </div>
+
             </div>
-        </main>
+            </main>
     </div>
 
     <div id="toast-container"></div>
-<script type="module" src="js/main.js"></script>
-
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>
