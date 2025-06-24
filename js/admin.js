@@ -3,41 +3,12 @@ import { showToast } from './cart.js';
 let allProducts = [];
 let allOrders = [];
 let currentAdminCategoryFilter = 'all';
-let authToken = ''; // متغير لتخزين توكن الأدمن
+let authToken = '';
 
-// --- بداية الجزء الجديد: دالة تشغيل الأكورديون ---
-function setupAccordion() {
-    const accordionHeaders = document.querySelectorAll('.accordion-header');
-
-    accordionHeaders.forEach(header => {
-        header.addEventListener('click', () => {
-            const content = header.nextElementSibling;
-
-            // إغلاق أي قسم آخر مفتوح (اختياري، لكنه يحسن التجربة)
-            const currentlyActiveHeader = document.querySelector('.accordion-header.active');
-            if (currentlyActiveHeader && currentlyActiveHeader !== header) {
-                currentlyActiveHeader.classList.remove('active');
-                const activeContent = currentlyActiveHeader.nextElementSibling;
-                activeContent.style.maxHeight = null;
-                activeContent.classList.remove('active');
-            }
-
-            // فتح أو إغلاق القسم الذي تم الضغط عليه
-            header.classList.toggle('active');
-            if (content.style.maxHeight) {
-                content.style.maxHeight = null;
-                content.classList.remove('active');
-            } else {
-                content.classList.add('active');
-                content.style.maxHeight = content.scrollHeight + "px";
-            }
-        });
-    });
-
-    // فتح القسم الأول (إضافة منتج) بشكل افتراضي عند تحميل الصفحة
-    const firstHeader = document.querySelector('.accordion-header');
-    if (firstHeader) {
-        firstHeader.click();
+// --- بداية الجزء الجديد: إضافة دالة الـ Spinner ---
+function showSpinner(containerElement) {
+    if (containerElement) {
+        containerElement.innerHTML = `<div class="spinner-container"><div class="spinner"></div></div>`;
     }
 }
 // --- نهاية الجزء الجديد ---
@@ -56,11 +27,43 @@ export function initializeAdminPage(products) {
 
     allProducts = products;
     setupAdminEventListeners();
-    setupAccordion(); // استدعاء دالة تشغيل الأكورديون
+    setupAccordion();
     resetAdminForm();
     displayAdminOrders();
     displayDeletedProducts();
     applyAdminFiltersAndSearch();
+}
+
+function setupAccordion() {
+    const accordionHeaders = document.querySelectorAll('.accordion-header');
+
+    accordionHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const content = header.nextElementSibling;
+
+            const currentlyActiveHeader = document.querySelector('.accordion-header.active');
+            if (currentlyActiveHeader && currentlyActiveHeader !== header) {
+                currentlyActiveHeader.classList.remove('active');
+                const activeContent = currentlyActiveHeader.nextElementSibling;
+                activeContent.style.maxHeight = null;
+                activeContent.classList.remove('active');
+            }
+
+            header.classList.toggle('active');
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+                content.classList.remove('active');
+            } else {
+                content.classList.add('active');
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        });
+    });
+
+    const firstHeader = document.querySelector('.accordion-header');
+    if (firstHeader) {
+        firstHeader.click();
+    }
 }
 
 function setupAdminEventListeners() {
@@ -123,6 +126,7 @@ function displayAdminProducts(productsToDisplay) {
 async function displayDeletedProducts() { 
     const listContainer = document.getElementById('deleted-products-list');
     if (!listContainer) return;
+    showSpinner(listContainer); // إظهار الـ Spinner
     try {
         const response = await fetch('/api/products/deleted', {
             headers: { 'Authorization': `Bearer ${authToken}` }
@@ -143,6 +147,7 @@ async function displayDeletedProducts() {
         });
         document.querySelectorAll('.btn-restore').forEach(btn => btn.addEventListener('click', () => handleRestoreProduct(btn.dataset.id)));
     } catch (error) {
+        listContainer.innerHTML = `<p style="text-align:center; color: #ff6b6b;">${error.message}</p>`;
         showToast(error.message, true);
         console.error(error);
     }
@@ -151,6 +156,7 @@ async function displayDeletedProducts() {
 async function displayAdminOrders() { 
     const listContainer = document.getElementById('manage-orders-list');
     if (!listContainer) return;
+    showSpinner(listContainer); // إظهار الـ Spinner
     try {
         const response = await fetch('/api/orders', {
             headers: { 'Authorization': `Bearer ${authToken}` }
@@ -293,15 +299,12 @@ function handleEditProduct(id) {
         addSizeStockRow();
     }
     
-    // --- بداية الجزء المعدل: تحديث selector الخاص بعنوان الفورم ---
     document.getElementById('form-title-accordion').textContent = `تعديل المنتج: ${product.name}`;
-    // --- نهاية الجزء المعدل ---
 
     document.getElementById('submit-btn').textContent = 'تحديث المنتج';
     document.getElementById('cancel-edit-btn').style.display = 'inline-block';
     
-    // فتح قسم الفورم عند الضغط على تعديل
-    const formHeader = document.getElementById('form-section-header');
+    const formHeader = document.querySelector('.accordion-header');
     if(formHeader && !formHeader.classList.contains('active')) {
         formHeader.click();
     }
@@ -317,9 +320,7 @@ function resetAdminForm() {
     addSizeStockRow(); 
     document.getElementById('product-id').value = '';
     
-    // --- بداية الجزء المعدل: تحديث selector الخاص بعنوان الفورم ---
     document.getElementById('form-title-accordion').textContent = 'إضافة منتج جديد';
-    // --- نهاية الجزء المعدل ---
 
     document.getElementById('submit-btn').textContent = 'إضافة المنتج';
     document.getElementById('cancel-edit-btn').style.display = 'none';

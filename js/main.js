@@ -1,12 +1,18 @@
 // استدعاء كل الدوال اللازمة من باقي الملفات
 import { initializeAdminPage } from './admin.js';
-import { handleLoginForm, handleRegisterForm, updateUserNav } from './auth.js';
+import { handleLoginForm, handleRegisterForm, updateUserNav, initializeRegisterPageListeners, handleForgotPasswordForm, handleResetPasswordForm } from './auth.js';
 import { showToast, updateCartIcon, addToCart, displayCartItems, displayCheckoutSummary, handleOrderSubmission } from './cart.js';
 import { initializeProfilePage } from './profile.js';
 
 // متغير عام هيحتوي على كل المنتجات بعد ما يتم جلبها من السيرفر
 let allProducts = [];
 
+
+function showSpinner(containerElement) {
+    if (containerElement) {
+        containerElement.innerHTML = `<div class="spinner-container"><div class="spinner"></div></div>`;
+    }
+}
 
 // --- بداية تشغيل التطبيق ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -22,7 +28,6 @@ function setupCommonEventListeners() {
     const header = document.querySelector('.main-header');
     if (!header) return;
 
-    // زر القائمة المنسدلة في الموبايل
     const toggleBtn = header.querySelector('.menu-toggle-btn');
     if (toggleBtn) {
         toggleBtn.addEventListener('click', (e) => {
@@ -32,7 +37,6 @@ function setupCommonEventListeners() {
         });
     }
 
-    // زر البحث في الموبايل
     const searchToggleBtn = header.querySelector('.search-toggle-btn');
     if (searchToggleBtn) {
         searchToggleBtn.addEventListener('click', (e) => {
@@ -45,7 +49,6 @@ function setupCommonEventListeners() {
         });
     }
 
-    // إغلاق القوائم عند الضغط في أي مكان خارجها
     window.addEventListener('click', () => {
         if (header.classList.contains('menu-is-open')) {
             header.classList.remove('menu-is-open');
@@ -59,7 +62,6 @@ function setupCommonEventListeners() {
         }
     });
 
-    // منع القوائم من الإغلاق عند الضغط بداخلها
     header.addEventListener('click', (e) => {
         if (e.target.closest('.expanded-links') || e.target.closest('.search-overlay') || e.target.closest('.user-actions')) {
             e.stopPropagation();
@@ -70,6 +72,11 @@ function setupCommonEventListeners() {
 
 async function initializeApp() {
     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+    const productGrid = document.querySelector('.product-grid');
+
+    if(productGrid) {
+        showSpinner(productGrid);
+    }
 
     try {
         const productsPromise = fetch('/api/products/search?keyword=').then(res => {
@@ -99,7 +106,6 @@ async function initializeApp() {
     } catch (error) {
         console.error('فشل في جلب البيانات الأولية:', error);
         showToast(error.message, true);
-        const productGrid = document.querySelector('.product-grid');
         if (productGrid) {
             productGrid.innerHTML = `<div class="empty-cart-container" style="display:block; grid-column: 1 / -1; text-align: center;"><h2>عفواً، حدث خطأ</h2><p>لا يمكن الاتصال بالسيرفر حالياً. حاول مرة أخرى.</p></div>`;
         }
@@ -139,6 +145,7 @@ function runPageSpecificLogic(products) {
     }
     if (document.getElementById('register-form')) {
         document.getElementById('register-form').addEventListener('submit', handleRegisterForm);
+        initializeRegisterPageListeners(); 
     }
     if (document.getElementById('profile-page-container')) {
         initializeProfilePage();
@@ -146,6 +153,14 @@ function runPageSpecificLogic(products) {
     if (document.getElementById('contact-form')) {
         initializeContactForm();
     }
+    // --- بداية الجزء الجديد ---
+    if (document.getElementById('forgot-password-form')) {
+        document.getElementById('forgot-password-form').addEventListener('submit', handleForgotPasswordForm);
+    }
+    if (document.getElementById('reset-password-form')) {
+        document.getElementById('reset-password-form').addEventListener('submit', handleResetPasswordForm);
+    }
+    // --- نهاية الجزء الجديد ---
 }
 
 
@@ -154,9 +169,9 @@ function initializeContactForm() {
     const submitBtn = document.getElementById('contact-submit-btn');
     if (!contactForm) return;
 
-    const publicKey = 'YOUR_PUBLIC_KEY';
-    const serviceID = 'YOUR_SERVICE_ID';
-    const templateID = 'YOUR_TEMPLATE_ID';
+    const publicKey = 'LZePcExeLCFN4FrpM';
+    const serviceID = 'service_b4ht9cf';
+    const templateID = 'template_zwqd2g8';
 
     emailjs.init({ publicKey: publicKey });
 
@@ -226,6 +241,10 @@ function initializeHomePage(products, urlParams) {
         const searchTerm = event.target.value.toLowerCase().trim();
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(async () => {
+            const productGrid = document.querySelector('.product-grid');
+            if (productGrid) {
+                showSpinner(productGrid); 
+            }
             try {
                 const response = await fetch(`/api/products/search?keyword=${encodeURIComponent(searchTerm)}`);
                 if (!response.ok) throw new Error('فشل البحث');
@@ -342,10 +361,9 @@ function setupQuantitySelector() {
     });
 }
 
-// --- بداية الجزء المعدل: إعادة كتابة دالة الـ Slider بالكامل ---
 function setupImageSlider(sliderWrapper) {
     let currentIndex = 0;
-    const slides = sliderWrapper.children; // الآن هذه هي عناصر .slide
+    const slides = sliderWrapper.children; 
     const totalSlides = slides.length;
     const nextBtn = document.querySelector('.slider-btn.next');
     const prevBtn = document.querySelector('.slider-btn.prev');
@@ -359,19 +377,15 @@ function setupImageSlider(sliderWrapper) {
     if(nextBtn) nextBtn.style.display = 'block'; 
     if(prevBtn) prevBtn.style.display = 'block';
 
-    // دالة جديدة لإظهار وإخفاء الصور
     function showSlide(index) {
-        // أولاً، قم بإخفاء كل الصور
         for (let slide of slides) {
             slide.classList.remove('active-slide');
         }
-        // ثانيًا، أظهر الصورة المطلوبة فقط
         if (slides[index]) {
             slides[index].classList.add('active-slide');
         }
     }
 
-    // إظهار الصورة الأولى عند تحميل الصفحة
     showSlide(currentIndex);
 
     if(nextBtn) nextBtn.addEventListener('click', () => {
@@ -384,4 +398,3 @@ function setupImageSlider(sliderWrapper) {
         showSlide(currentIndex);
     });
 }
-// --- نهاية الجزء المعدل ---

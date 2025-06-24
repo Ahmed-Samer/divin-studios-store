@@ -1,16 +1,21 @@
-import { showToast } from './cart.js'; // لإظهار أي رسائل خطأ
+import { showToast } from './cart.js';
 
-// الدالة الرئيسية اللي هيتم استدعاؤها من main.js
+// --- بداية الجزء الجديد: إضافة دالة الـ Spinner ---
+function showSpinner(containerElement) {
+    if (containerElement) {
+        containerElement.innerHTML = `<div class="spinner-container"><div class="spinner"></div></div>`;
+    }
+}
+// --- نهاية الجزء الجديد ---
+
+// الدالة الرئيسية اللي بيتم استدعاؤها من main.js
 export function initializeProfilePage() {
-    // أولاً، التحقق من أن المستخدم مسجل دخوله
     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
     if (!userInfo || !userInfo.token) {
-        // إذا لم يكن مسجلاً، يتم توجيهه لصفحة الدخول فورًا
         window.location.href = 'login.html';
         return;
     }
 
-    // ثانيًا، عرض بيانات المستخدم
     const profileNameEl = document.getElementById('profile-name');
     const profileEmailEl = document.getElementById('profile-email');
     if (profileNameEl && profileEmailEl) {
@@ -18,7 +23,6 @@ export function initializeProfilePage() {
         profileEmailEl.textContent = userInfo.email;
     }
     
-    // ثالثًا، جلب وعرض طلبات المستخدم
     fetchMyOrders(userInfo.token);
 }
 
@@ -27,14 +31,15 @@ async function fetchMyOrders(token) {
     const ordersListContainer = document.getElementById('my-orders-list');
     if (!ordersListContainer) return;
 
+    showSpinner(ordersListContainer); // إظهار الـ Spinner قبل جلب البيانات
+
     try {
         const response = await fetch('/api/users/myorders', {
             headers: {
-                'Authorization': `Bearer ${token}` // إرسال التوكن للتأكد من هوية المستخدم
+                'Authorization': `Bearer ${token}`
             }
         });
 
-        // لو السيرفر رجع خطأ "غير مصرح"، معناه التوكن منتهي الصلاحية
         if (response.status === 401) {
             localStorage.removeItem('userInfo');
             window.location.href = 'login.html';
@@ -51,7 +56,7 @@ async function fetchMyOrders(token) {
 
     } catch (error) {
         console.error('Error fetching orders:', error);
-        ordersListContainer.innerHTML = '<p>حدث خطأ أثناء جلب طلباتك. يرجى المحاولة مرة أخرى.</p>';
+        ordersListContainer.innerHTML = '<p style="text-align: center; color: #ff6b6b;">حدث خطأ أثناء جلب طلباتك. يرجى المحاولة مرة أخرى.</p>';
         showToast(error.message, true);
     }
 }
@@ -60,19 +65,17 @@ async function fetchMyOrders(token) {
 function renderOrders(orders, container) {
     container.innerHTML = '';
     if (orders.length === 0) {
-        container.innerHTML = '<p>لم تقم بأي طلبات بعد.</p>';
+        container.innerHTML = '<p style="text-align: center;">لم تقم بأي طلبات بعد.</p>';
         return;
     }
 
     orders.forEach(order => {
-        // استخدام نفس تنسيق الطلبات في صفحة الأدمن للحفاظ على التصميم
         const orderDate = new Date(order.createdAt).toLocaleDateString('ar-EG', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
         });
         
-        // عرض آخر 6 أرقام من كود الطلب لسهولة القراءة
         const orderIdShort = order._id.substring(order._id.length - 6).toUpperCase();
 
         const orderItemHTML = `

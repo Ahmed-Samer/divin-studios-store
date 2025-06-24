@@ -5,6 +5,8 @@ const path =require('path');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 const app = express();
 app.use(cors());
@@ -21,7 +23,6 @@ mongoose.connect(process.env.MONGO_URI)
     });
 
 // --- موديل المستخدم ---
-// --- بداية الجزء المعدل: إضافة حقل السلة للمستخدم ---
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
@@ -33,11 +34,14 @@ const userSchema = new mongoose.Schema({
             quantity: { type: Number, required: true, default: 1 },
             size: { type: String, required: true }
         }
-    ]
+    ],
+    // --- بداية الجزء الجديد: حقول إعادة تعيين كلمة المرور ---
+    passwordResetToken: String,
+    passwordResetExpires: Date,
+    // --- نهاية الجزء الجديد ---
 }, {
     timestamps: true
 });
-// --- نهاية الجزء المعدل ---
 userSchema.pre('save', async function (next) {
     if (!this.isModified('password')) {
         next();
@@ -97,28 +101,8 @@ const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
 
 // --- المنتجات الأولية ---
 const initialProducts = [
-    // ... محتوى المنتجات الأولية كما هو بدون تغيير ...
     { id: 1, name: 'Classic Fit Blazer', price: 1200, category: 'رجالي', images: ['/images/classicfitblazer1.jpg', '/images/classicfitblazer2.jpg', '/images/classicfitblazer3.jpg'], description: `خامة: 80% قطن – 20% بوليستر<br>ألوان: أسود، كحلي، رمادي<br>مثالي للمناسبات الرسمية والعمل`, sizes: [{name: 'S', stock: 5}, {name: 'M', stock: 5}, {name: 'L', stock: 3}, {name: 'XL', stock: 2}] },
     { id: 2, name: 'Slim Fit Jeans', price: 650, category: 'رجالي', images: ['/images/slimfitjeans1.jpg', '/images/slimfitjeans2.jpg', '/images/slimfitjeans3.jpg'], description: `خامة: دنيم مرن عالي الجودة<br>لون: أزرق غامق<br>جيوب أمامية وخلفية<br>تصميم عصري مريح`, sizes: [{name: '30', stock: 10}, {name: '32', stock: 10}, {name: '34', stock: 5}] },
-    { id: 3, name: 'Cotton Polo Shirt', price: 450, category: 'رجالي', images: ['/images/cottonpoloshirt1.jpg', '/images/cottonpoloshirt2.jpg'], description: `خامة 100% قطن<br>ألوان متعددة: أبيض، أحمر، أزرق، أخضر<br>ياقة بأزرار<br>مناسب للكاجوال أو الشغل`, sizes: [{name: 'S', stock: 10}, {name: 'M', stock: 15}, {name: 'L', stock: 5}] },
-    { id: 4, name: 'Hooded Zip Jacket', price: 900, category: 'رجالي', images: ['/images/hoodedzipjacket1.jpg', '/images/hoodedzipjacket2.jpg'], description: `خامة مقاومة للمطر<br>سوستة كاملة + قبعة<br>مبطنة من الداخل<br>مثالي للشتاء والخروجات`, sizes: [{name: 'M', stock: 6}, {name: 'L', stock: 4}, {name: 'XL', stock: 2}] },
-    { id: 5, name: 'Linen Summer Shirt', price: 500, category: 'رجالي', images: ['/images/linensummershirt1.jpg', '/images/linensummershirt2.jpg'], description: `خامة: كتان خفيف<br>ألوان: بيج، أبيض، أزرق فاتح<br>أزرار أمامية بالكامل<br>مثالي للطقس الحار`, sizes: [{name: 'M', stock: 10}, {name: 'L', stock: 8}, {name: 'XL', stock: 4}] },
-    { id: 6, name: 'Casual Chinos Pants', price: 580, category: 'رجالي', images: ['/images/casualchinospants1.jpg', '/images/casualchinospants2.jpg'], description: `خامة: قطن مطاطي<br>لون: كاكي، كحلي، رمادي فاتح<br>تصميم مستقيم<br>ينفع للشغل أو الخروجات`, sizes: [{name: '32', stock: 8}, {name: '34', stock: 10}, {name: '36', stock: 5}] },
-    { id: 7, name: 'Basic Round Neck T-Shirt', price: 250, category: 'رجالي', images: ['/images/basicroundnecktshirt1.jpg', '/images/basicroundnecktshirt2.jpg'], description: `100% قطن عضوي<br>ألوان متعددة<br>تصميم بسيط<br>سهل التنسيق مع أي بنطلون`, sizes: [{name: 'S', stock: 20}, {name: 'M', stock: 20}, {name: 'L', stock: 10}] },
-    { id: 8, name: 'Silk Midi Dress', price: 1500, category: 'نسائي', images: ['/images/silkmididress1.jpg', '/images/silkmididress2.jpg', '/images/silkmididress3.jpg'], description: `خامة: حرير ناعم<br>ألوان: نبيتي، أسود، أزرق<br>فتحة رقبة على شكل V<br>مثالي للسهرات`, sizes: [{name: 'S', stock: 5}, {name: 'M', stock: 3}, {name: 'L', stock: 2}] },
-    { id: 9, name: 'High-Waisted Jeans', price: 700, category: 'نسائي', images: ['/images/highwaistedjeans1.jpg', '/images/highwaistedjeans2.jpg'], description: `تصميم slim fit<br>خامة مطاطة ومريحة<br>لون أزرق فاتح<br>جيوب أمامية وخلفية`, sizes: [{name: '28', stock: 8}, {name: '30', stock: 8}, {name: '32', stock: 4}] },
-    { id: 10, name: 'Oversized Cotton Shirt', price: 550, category: 'نسائي', images: ['/images/oversizedcottonshirt1.jpg', '/images/oversizedcottonshirt2.jpg'], description: `خامة: قطن 100%<br>تصميم واسع مريح<br>ألوان: أبيض، روز، أزرق<br>يمكن ارتداؤه كجاكيت خفيف`, sizes: [{name: 'One Size', stock: 15}] },
-    { id: 11, name: 'Pleated Maxi Skirt', price: 600, category: 'نسائي', images: ['/images/pleatedmaxiskirt1.jpg', '/images/pleatedmaxiskirt2.jpg'], description: `طول: للكاحل<br>خامة خفيفة ناعمة<br>ألوان: بيج، نبيتي، أخضر<br>تصميم أنثوي أنيق`, sizes: [{name: 'S', stock: 8}, {name: 'M', stock: 6}, {name: 'L', stock: 4}] },
-    { id: 12, name: 'Sporty Crop Hoodie', price: 480, category: 'نسائي', images: ['/images/sportycrophoodie1.jpg', '/images/sportycrophoodie2.jpg'], description: `خامة: قطن ممزوج<br>تصميم كاجوال شبابي<br>قبعة + حزام<br>ألوان: أسود، موف، أبيض`, sizes: [{name: 'S', stock: 12}, {name: 'M', stock: 13}] },
-    { id: 13, name: 'Classic Blouse with Lace', price: 520, category: 'نسائي', images: ['/images/classicblousewithlace1.jpg', '/images/classicblousewithlace2.jpg'], description: `خامة: شيفون + دانتيل<br>رقبة مغلقة<br>ألوان: ناعم وأنيق<br>مثالي للشغل أو المناسبات`, sizes: [{name: 'M', stock: 8}, {name: 'L', stock: 6}] },
-    { id: 14, name: 'High Waist Wide Pants', price: 620, category: 'نسائي', images: ['/images/highwaistwidepants1.jpg', '/images/highwaistwidepants2.jpg'], description: `بنطلون واسع مريح<br>خامة ناعمة وسهلة الحركة<br>ألوان: بيج، أسود، زيتي<br>شكل عصري ومناسب لكل الأجسام`, sizes: [{name: 'S', stock: 10}, {name: 'M', stock: 10}] },
-    { id: 15, name: 'Boys Graphic T-Shirt', price: 280, category: 'اطفالي', images: ['/images/boysgraphictshirt1.jpg', '/images/boysgraphictshirt2.jpg'], description: `قطن 100%<br>رسومات ممتعة للأطفال<br>ألوان: أزرق، أخضر، أحمر<br>من سن 3 – 12 سنة`, sizes: [{name: '3-4Y', stock: 10}, {name: '5-6Y', stock: 10}] },
-    { id: 16, name: 'Girls Tulle Party Dress', price: 450, category: 'اطفالي', images: ['/images/girlstullepartydress1.jpg', '/images/girlstullepartydress2.jpg'], description: `خامة: تول + بطانة ناعمة<br>ألوان: وردي، لافندر، أبيض<br>تصميم أميرات<br>مناسب للأعياد والحفلات`, sizes: [{name: '4Y', stock: 5}, {name: '6Y', stock: 5}, {name: '8Y', stock: 5}] },
-    { id: 17, name: 'Kids Zip-Up Hoodie', price: 380, category: 'اطفالي', images: ['/images/kidszipuphoodie1.jpg', '/images/kidszipuphoodie2.jpg'], description: `خامة دافئة<br>قبعة + سوستة<br>مناسب للأولاد والبنات<br>ألوان: رمادي، كحلي، موف`, sizes: [{name: 'S', stock: 10}, {name: 'M', stock: 10}, {name: 'L', stock: 10}] },
-    { id: 18, name: 'Baby Romper Set', price: 320, category: 'اطفالي', images: ['/images/babyromperset1.jpg', '/images/babyromperset2.jpg'], description: `قطعة واحدة + قبعة<br>خامة ناعمة آمنة للرضع<br>سن: 0–24 شهر<br>ألوان: سماوي، أبيض، أصفر`, sizes: [{name: '0-6M', stock: 8}, {name: '6-12M', stock: 8}] },
-    { id: 19, name: 'Boys Cargo Shorts', price: 300, category: 'اطفالي', images: ['/images/boyscargoshorts1.jpg', '/images/boyscargoshorts2.jpg'], description: `قطن قوي<br>جيوب جانبية<br>ألوان: بيج، زيتي، كاكي<br>مثالي للعب والحركة`, sizes: [{name: '4Y', stock: 10}, {name: '6Y', stock: 10}, {name: '8Y', stock: 10}] },
-    { id: 20, name: 'Girls Leggings Pack (2pcs)', price: 220, category: 'اطفالي', images: ['/images/girlsleggingspack1.jpg', '/images/girlsleggingspack2.jpg'], description: `خامة مطاطية ومريحة<br>تصميمات مرحة<br>من 4–12 سنة<br>ألوان متنوعة`, sizes: [{name: '4-5Y', stock: 15}, {name: '6-7Y', stock: 15}] },
-    { id: 21, name: 'Unisex Winter Jacket', price: 950, category: 'اطفالي', images: ['/images/unisexwinterjacket1.jpg', '/images/unisexwinterjacket2.jpg'], description: `مبطن ودافئ جدًا<br>مقاوم للهواء والمطر<br>قبعة قابلة للإزالة<br>ألوان: أسود، أزرق، وردي`, sizes: [{name: 'S', stock: 5}, {name: 'M', stock: 5}, {name: 'L', stock: 4}, {name: 'XL', stock: 4}] }
 ];
 async function seedInitialProducts() { try { const productCount = await Product.countDocuments(); if (productCount === 0) { console.log('قاعدة البيانات فارغة، سيتم إضافة المنتجات بالهيكل الجديد...'); await Product.insertMany(initialProducts); console.log('تمت إضافة المنتجات الأولية بنجاح!'); } } catch (error) { console.error('خطأ أثناء إضافة المنتجات الأولية:', error); } }
 
@@ -151,6 +135,86 @@ const admin = (req, res, next) => {
 const generateToken = (id) => { return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' }); };
 app.post('/api/users/register', async (req, res) => { const { name, email, password } = req.body; try { const userExists = await User.findOne({ email }); if (userExists) { return res.status(400).json({ message: 'هذا البريد الإلكتروني مسجل بالفعل' }); } const user = await User.create({ name, email, password }); if (user) { res.status(201).json({ _id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin, token: generateToken(user._id), cart: user.cart }); } else { res.status(400).json({ message: 'بيانات المستخدم غير صالحة' }); } } catch (error) { res.status(500).json({ message: 'حدث خطأ في السيرفر' }); } });
 app.post('/api/users/login', async (req, res) => { const { email, password } = req.body; try { const user = await User.findOne({ email }); if (user && (await user.matchPassword(password))) { res.json({ _id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin, token: generateToken(user._id), cart: user.cart }); } else { res.status(401).json({ message: 'البريد الإلكتروني أو كلمة السر غير صحيحة' }); } } catch (error) { res.status(500).json({ message: 'حدث خطأ في السيرفر' }); } });
+app.post('/api/users/check-email', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: 'البريد الإلكتروني مطلوب' });
+        }
+        const userExists = await User.findOne({ email: email.toLowerCase() });
+        res.status(200).json({ exists: !!userExists });
+    } catch (error) {
+        res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء التحقق' });
+    }
+});
+
+// --- بداية الجزء الجديد: واجهات برمجة تطبيقات "نسيت كلمة المرور" ---
+app.post('/api/users/forgot-password', async (req, res) => {
+    try {
+        const user = await User.findOne({ email: req.body.email });
+        if (!user) {
+            // ملاحظة: لا نكشف ما إذا كان المستخدم موجودًا أم لا لأسباب أمنية
+            return res.status(200).json({ message: 'إذا كان بريدك الإلكتروني مسجلاً لدينا، فستتلقى رابطًا لإعادة تعيين كلمة المرور.' });
+        }
+
+        const resetToken = crypto.randomBytes(20).toString('hex');
+        user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        user.passwordResetExpires = Date.now() + 15 * 60 * 1000; // صلاحية لمدة 15 دقيقة
+
+        await user.save();
+
+        const resetURL = `${req.protocol}://${req.get('host')}/reset-password.html?token=${resetToken}`;
+        const message = `لقد طلبت إعادة تعيين كلمة المرور. برجاء الضغط على الرابط التالي (أو نسخه ولصقه في متصفحك) لإعادة تعيين كلمة المرور الخاصة بك. هذا الرابط صالح لمدة 15 دقيقة فقط:\n\n${resetURL}`;
+
+        const transporter = nodemailer.createTransport({
+            host: process.env.EMAIL_HOST,
+            port: process.env.EMAIL_PORT,
+            secure: true, // true for 465, false for other ports
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+            },
+        });
+
+        await transporter.sendMail({
+            from: `"Zantiva Store" <${process.env.EMAIL_USER}>`,
+            to: user.email,
+            subject: 'إعادة تعيين كلمة المرور لمتجر Zantiva',
+            text: message,
+        });
+
+        res.status(200).json({ message: 'تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني.' });
+    } catch (err) {
+        console.error('ERROR IN FORGOT PASSWORD:', err);
+        // لا نرجع الخطأ للمستخدم للحفاظ على الأمان
+        res.status(200).json({ message: 'إذا كان بريدك الإلكتروني مسجلاً لدينا، فستتلقى رابطًا لإعادة تعيين كلمة المرور.' });
+    }
+});
+
+app.post('/api/users/reset-password/:token', async (req, res) => {
+    try {
+        const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+        const user = await User.findOne({
+            passwordResetToken: hashedToken,
+            passwordResetExpires: { $gt: Date.now() },
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'التوكن غير صالح أو انتهت صلاحيته.' });
+        }
+        
+        user.password = req.body.password;
+        user.passwordResetToken = undefined;
+        user.passwordResetExpires = undefined;
+        await user.save();
+
+        res.status(200).json({ message: 'تم تغيير كلمة المرور بنجاح!' });
+    } catch (error) {
+        res.status(500).json({ message: 'حدث خطأ أثناء إعادة تعيين كلمة المرور.' });
+    }
+});
+// --- نهاية الجزء الجديد ---
+
 app.get('/api/users/myorders', protect, async (req, res) => {
     try {
         const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
@@ -159,12 +223,9 @@ app.get('/api/users/myorders', protect, async (req, res) => {
         res.status(500).json({ message: 'فشل في جلب طلبات المستخدم' });
     }
 });
-
-// --- بداية الجزء الجديد: واجهات برمجة تطبيقات سلة المستخدم ---
 app.get('/api/users/cart', protect, (req, res) => {
     res.status(200).json(req.user.cart);
 });
-
 app.post('/api/users/cart', protect, async (req, res) => {
     try {
         const { cart } = req.body;
@@ -180,9 +241,9 @@ app.post('/api/users/cart', protect, async (req, res) => {
         res.status(500).json({ message: 'خطأ في تحديث السلة' });
     }
 });
-// --- نهاية الجزء الجديد ---
 
 
+// ... (باقي أكواد API للمنتجات والطلبات كما هي)
 // --- Products API ---
 app.get('/api/products/search', async (req, res) => { try { const keyword = req.query.keyword ? { name: { $regex: req.query.keyword, $options: 'i' } } : {}; const products = await Product.find({ ...keyword, isDeleted: { $ne: true } }); res.json(products); } catch (error) { res.status(500).json({ message: 'فشل في البحث عن المنتجات' }); } });
 app.get('/api/products/deleted', protect, admin, async (req, res) => { try { const deletedProducts = await Product.find({ isDeleted: true }); res.json(deletedProducts); } catch (error) { res.status(500).json({ message: 'فشل في جلب المنتجات المحذوفة' }); } });
@@ -246,17 +307,10 @@ app.post('/api/orders', async (req, res) => {
         }
         const newOrder = new Order(newOrderData);
         const savedOrder = await newOrder.save({ session });
-        for (const product of savedOrder.products) {
-            await Product.updateOne({ id: product.productId, "sizes.name": product.size }, { $inc: { "sizes.$.stock": -product.quantity } }, { session });
-        }
-
-        // --- بداية الجزء الجديد: مسح سلة المستخدم بعد تأكيد الطلب ---
         if (user) {
             user.cart = [];
             await user.save({ session });
         }
-        // --- نهاية الجزء الجديد ---
-
         await session.commitTransaction();
         res.status(201).json(savedOrder);
     } catch (error) {

@@ -291,6 +291,22 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 .error-message { color: #ff6b6b; font-size: 13px; margin-top: 5px; display: none; }
 .form-group input.invalid, .form-group textarea.invalid { border-color: #ff6b6b; }
 
+/* --- بداية الجزء الجديد --- */
+.form-link-container {
+    text-align: center;
+    margin-top: 15px;
+}
+.form-link {
+    color: #a8b2d1;
+    font-size: 14px;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+.form-link:hover {
+    color: #64ffda;
+}
+/* --- نهاية الجزء الجديد --- */
+
 /* --- تصميم الصفحات الثابتة ولوحة التحكم --- */
 .static-page-container, .admin-page-container { background-color: #112240; padding: 40px; border-radius: 8px; max-width: 900px; margin: 40px auto; }
 .about-content p, .contact-info p { font-size: 18px; line-height: 1.8; margin-bottom: 20px; }
@@ -366,6 +382,28 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
     padding: 25px;
 }
 
+/* --- Spinner Styles --- */
+.spinner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 50px;
+    width: 100%;
+    min-height: 200px;
+}
+.spinner {
+    border: 5px solid rgba(204, 214, 246, 0.2);
+    border-top-color: #64ffda;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 
 /* --- أكواد التصميم المتجاوب (Responsive) --- */
 @media (max-width: 992px) { 
@@ -379,28 +417,19 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
     .nav-section.middle { flex-grow: 1; text-align: center; } 
     .nav-section.right { flex-basis: 33%; justify-content: flex-start; }
     .nav-section.left { flex-basis: 33%; justify-content: flex-end; gap: 10px; }
-
     .logo { font-size: 22px; } 
-
     .search-container { display: none; } 
     .search-toggle-btn { display: block; } 
-    
-    /* --- بداية الجزء المعدل --- */
-    /* إخفاء أزرار الدخول والتسجيل، وأيضًا زر قائمة المستخدم من الهيدر الرئيسي في الموبايل */
     .user-actions { 
         display: none; 
     }
-    /* --- نهاية الجزء المعدل --- */
-
     .main-header.menu-is-open .expanded-links {
         display: flex;
         left: 0;
     }
-    
     .search-overlay { position: absolute; top: 100%; left: 0; width: 100%; background-color: #0a192f; padding: 15px 5%; box-sizing: border-box; box-shadow: 0 4px 8px rgba(0,0,0,0.2); display: none; } 
     .main-header.search-active .search-overlay { display: block; } 
     #mobile-search-bar { width: 100%; background-color: #2a4162; border: 1px solid #64ffda; color: #ccd6f6; padding: 12px 15px; border-radius: 20px; outline: none; } 
-    
     .product-detail-layout { grid-template-columns: 1fr; } 
     .product-title-large { font-size: 32px; } 
     .slider-btn { padding: 10px; font-size: 20px; } 

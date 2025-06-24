@@ -1,9 +1,7 @@
 import { showToast } from './cart.js';
-import { updateCartIcon } from './cart.js'; // سنحتاج هذه الدالة هنا
+import { updateCartIcon } from './cart.js';
 
-// --- بداية الجزء الجديد: دوال مساعدة للسلة ---
-
-// دالة لدمج سلة الزائر مع سلة المستخدم
+// --- دوال مساعدة للسلة ---
 function mergeCarts(guestCart, userCart) {
     if (!guestCart || guestCart.length === 0) {
         return userCart || [];
@@ -11,25 +9,20 @@ function mergeCarts(guestCart, userCart) {
     if (!userCart || userCart.length === 0) {
         return guestCart || [];
     }
-
-    const mergedCart = [...userCart]; // ابدأ بسلة المستخدم
+    const mergedCart = [...userCart];
     guestCart.forEach(guestItem => {
         const existingItemIndex = mergedCart.findIndex(
             userItem => userItem.id === guestItem.id && userItem.size === guestItem.size
         );
-
         if (existingItemIndex > -1) {
-            // إذا كان المنتج موجودًا بالفعل، قم بزيادة الكمية
             mergedCart[existingItemIndex].quantity += guestItem.quantity;
         } else {
-            // إذا كان المنتج جديدًا، أضفه إلى السلة
             mergedCart.push(guestItem);
         }
     });
     return mergedCart;
 }
 
-// دالة لحفظ السلة في قاعدة البيانات
 async function saveCartToDb(cart, token) {
     try {
         await fetch('/api/users/cart', {
@@ -46,11 +39,45 @@ async function saveCartToDb(cart, token) {
     }
 }
 
-// --- نهاية الجزء الجديد ---
+// --- منطق التحقق الفوري للإيميل ---
+export function initializeRegisterPageListeners() {
+    const emailInput = document.getElementById('email');
+    const emailError = document.getElementById('email-error-message');
+
+    if (!emailInput || !emailError) return;
+
+    emailInput.addEventListener('blur', async () => {
+        const email = emailInput.value.trim();
+        const emailFormatRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailFormatRegex.test(email)) {
+            emailError.textContent = '';
+            emailError.style.display = 'none';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/users/check-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await response.json();
+            if (data.exists) {
+                emailError.textContent = 'هذا البريد الإلكتروني مسجل بالفعل.';
+                emailError.style.display = 'block';
+            } else {
+                emailError.textContent = '';
+                emailError.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error checking email:', error);
+        }
+    });
+}
 
 
 // --- منطق المستخدمين المعدل ---
-
 export async function handleRegisterForm(event) {
     event.preventDefault();
     const name = document.getElementById('name').value;
@@ -58,8 +85,20 @@ export async function handleRegisterForm(event) {
     const password = document.getElementById('password').value;
     const confirmPassword = document.getElementById('confirm-password').value;
 
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    if (!passwordRegex.test(password)) {
+        showToast('كلمة السر يجب أن تكون 8 أحرف على الأقل وتحتوي على أرقام وحروف.', true);
+        return;
+    }
+
     if (password !== confirmPassword) {
         showToast('كلمتا السر غير متطابقتين!', true);
+        return;
+    }
+
+    const emailError = document.getElementById('email-error-message');
+    if (emailError && emailError.style.display === 'block') {
+        showToast('يرجى استخدام بريد إلكتروني آخر لإنه مسجل بالفعل.', true);
         return;
     }
     
@@ -74,7 +113,6 @@ export async function handleRegisterForm(event) {
             showToast('تم إنشاء الحساب بنجاح! جاري مزامنة السلة...');
             const guestCart = JSON.parse(localStorage.getItem('cart')) || [];
             
-            // لو كان هناك منتجات في سلة الزائر، احفظها في حسابه الجديد
             if (guestCart.length > 0) {
                 await saveCartToDb(guestCart, data.token);
             }
@@ -106,12 +144,10 @@ export async function handleLoginForm(event) {
         if (response.ok) {
             showToast('تم تسجيل الدخول بنجاح! جاري دمج السلة...');
             
-            // منطق دمج السلال
             const guestCart = JSON.parse(localStorage.getItem('cart')) || [];
             const userCart = data.cart || [];
             const mergedCart = mergeCarts(guestCart, userCart);
 
-            // احفظ السلة المدمجة في قاعدة البيانات ثم في الـ localStorage
             await saveCartToDb(mergedCart, data.token);
             localStorage.setItem('cart', JSON.stringify(mergedCart));
             localStorage.setItem('userInfo', JSON.stringify(data));
@@ -128,7 +164,6 @@ export async function handleLoginForm(event) {
 }
 
 function handleLogout() {
-    // مسح بيانات المستخدم والسلة من الـ localStorage عند تسجيل الخروج
     localStorage.removeItem('userInfo');
     localStorage.setItem('cart', JSON.stringify([])); 
     window.location.href = 'login.html';
@@ -169,7 +204,6 @@ export function updateUserNav() {
         `;
     }
 
-    // لتجنب إعادة إضافة event listeners بدون داعي، نحدث الـ HTML فقط لو تغير
     if (currentContent !== newContent) {
         userActionsContainer.innerHTML = newContent;
 
@@ -184,3 +218,77 @@ export function updateUserNav() {
         }
     }
 }
+
+// --- بداية الجزء الجديد: دوال استعادة كلمة المرور ---
+export async function handleForgotPasswordForm(event) {
+    event.preventDefault();
+    const email = document.getElementById('email').value;
+    const submitBtn = event.target.querySelector('button');
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'جاري الإرسال...';
+
+    try {
+        const response = await fetch('/api/users/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await response.json();
+        showToast(data.message); // إظهار رسالة السيرفر للمستخدم
+    } catch (error) {
+        showToast('حدث خطأ. يرجى المحاولة مرة أخرى.', true);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'إرسال رابط إعادة التعيين';
+    }
+}
+
+export async function handleResetPasswordForm(event) {
+    event.preventDefault();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+    const submitBtn = event.target.querySelector('button');
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+        showToast('رابط إعادة التعيين غير صالح أو مفقود.', true);
+        return;
+    }
+
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    if (!passwordRegex.test(password)) {
+        showToast('كلمة السر يجب أن تكون 8 أحرف على الأقل وتحتوي على أرقام وحروف.', true);
+        return;
+    }
+    if (password !== confirmPassword) {
+        showToast('كلمتا السر غير متطابقتين!', true);
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'جاري التحديث...';
+
+    try {
+        const response = await fetch(`/api/users/reset-password/${token}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+        const data = await response.json();
+        if (response.ok) {
+            showToast(data.message, false); // false تجعل لونها أخضر للنجاح
+            submitBtn.textContent = 'تم التحديث بنجاح';
+            setTimeout(() => { window.location.href = 'login.html'; }, 3000);
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        showToast(error.message, true);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'تحديث كلمة المرور';
+    }
+}
+// --- نهاية الجزء الجديد ---
