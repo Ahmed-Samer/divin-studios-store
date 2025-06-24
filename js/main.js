@@ -1,12 +1,13 @@
 // استدعاء كل الدوال اللازمة من باقي الملفات
 import { initializeAdminPage } from './admin.js';
-import { handleLoginForm, handleRegisterForm, updateUserNav, initializeRegisterPageListeners, handleForgotPasswordForm, handleResetPasswordForm } from './auth.js';
+import { handleLoginForm, handleRegisterForm, updateUserNav, initializeRegisterPageListeners, handleForgotPasswordForm, handleResetPasswordForm, setupPasswordToggle } from './auth.js';
 import { showToast, updateCartIcon, addToCart, displayCartItems, displayCheckoutSummary, handleOrderSubmission } from './cart.js';
 import { initializeProfilePage } from './profile.js';
 
-// متغير عام هيحتوي على كل المنتجات بعد ما يتم جلبها من السيرفر
+// متغيرات عامة
 let allProducts = [];
-
+let wishlist = []; // متغير جديد لتخزين قائمة المفضلة
+const userInfo = JSON.parse(localStorage.getItem('userInfo'));
 
 function showSpinner(containerElement) {
     if (containerElement) {
@@ -16,9 +17,7 @@ function showSpinner(containerElement) {
 
 // --- بداية تشغيل التطبيق ---
 document.addEventListener('DOMContentLoaded', () => {
-    // تشغيل الدوال العامة أولًا
     setupCommonEventListeners();
-    // بدء جلب البيانات وتشغيل منطق الصفحة
     initializeApp();
 });
 
@@ -49,15 +48,16 @@ function setupCommonEventListeners() {
         });
     }
 
-    window.addEventListener('click', () => {
+    window.addEventListener('click', (e) => {
         if (header.classList.contains('menu-is-open')) {
             header.classList.remove('menu-is-open');
         }
         if (header.classList.contains('search-active')) {
             header.classList.remove('search-active');
         }
+        // إخفاء قائمة المستخدم عند الضغط في أي مكان آخر
         const userActions = document.querySelector('.user-actions.open');
-        if (userActions) {
+        if (userActions && !userActions.contains(e.target)) {
             userActions.classList.remove('open');
         }
     });
@@ -67,11 +67,17 @@ function setupCommonEventListeners() {
             e.stopPropagation();
         }
     });
+
+    // Event delegation for wishlist icons
+    document.addEventListener('click', function(event) {
+        if (event.target.matches('.wishlist-icon')) {
+            handleWishlistToggle(event.target);
+        }
+    });
 }
 
 
 async function initializeApp() {
-    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
     const productGrid = document.querySelector('.product-grid');
 
     if(productGrid) {
@@ -84,24 +90,28 @@ async function initializeApp() {
             return res.json();
         });
 
+        // جلب السلة والمفضلة معًا إذا كان المستخدم مسجلاً
         if (userInfo && userInfo.token) {
             const cartPromise = fetch('/api/users/cart', {
                 headers: { 'Authorization': `Bearer ${userInfo.token}` }
-            }).then(res => {
-                if (!res.ok) return []; 
-                return res.json();
-            });
+            }).then(res => res.ok ? res.json() : []);
 
-            const [products, userCart] = await Promise.all([productsPromise, cartPromise]);
+            const wishlistPromise = fetch('/api/users/wishlist', {
+                 headers: { 'Authorization': `Bearer ${userInfo.token}` }
+            }).then(res => res.ok ? res.json() : []);
+
+            const [products, userCart, userWishlist] = await Promise.all([productsPromise, cartPromise, wishlistPromise]);
             allProducts = products;
+            wishlist = userWishlist.map(p => p.id); // خزن أرقام المنتجات فقط
             
             localStorage.setItem('cart', JSON.stringify(userCart || []));
+            localStorage.setItem('userInfo', JSON.stringify({...userInfo, wishlist: wishlist}));
 
         } else {
             allProducts = await productsPromise;
         }
 
-        runPageSpecificLogic(allProducts);
+        runPageSpecificLogic();
 
     } catch (error) {
         console.error('فشل في جلب البيانات الأولية:', error);
@@ -114,31 +124,32 @@ async function initializeApp() {
 
 
 // دالة تعمل كـ "راوتر" لتشغيل الكود المناسب لكل صفحة
-function runPageSpecificLogic(products) {
+function runPageSpecificLogic() {
     updateUserNav();
     updateCartIcon();
 
     const urlParams = new URLSearchParams(window.location.search);
+    const path = window.location.pathname;
 
-    if (document.querySelector('.product-grid')) {
-        initializeHomePage(products, urlParams);
+    if (document.querySelector('.product-grid') && (path === '/' || path.endsWith('index.html'))) {
+        initializeHomePage(urlParams);
     }
     if (document.querySelector('.product-detail-layout')) {
         const productId = urlParams.get('id');
-        initializeProductDetailPage(productId, products);
+        initializeProductDetailPage(productId);
     }
     if (document.querySelector('.cart-page-container')) {
-        displayCartItems(products);
+        displayCartItems(allProducts);
     }
     if (document.querySelector('.checkout-page-container')) {
-        displayCheckoutSummary(products);
+        displayCheckoutSummary(allProducts);
         const checkoutForm = document.getElementById('checkout-form');
         if (checkoutForm) {
             checkoutForm.addEventListener('submit', handleOrderSubmission);
         }
     }
     if (document.getElementById('add-product-form')) {
-        initializeAdminPage(products);
+        initializeAdminPage(allProducts);
     }
     if (document.getElementById('login-form')) {
         document.getElementById('login-form').addEventListener('submit', handleLoginForm);
@@ -153,14 +164,20 @@ function runPageSpecificLogic(products) {
     if (document.getElementById('contact-form')) {
         initializeContactForm();
     }
-    // --- بداية الجزء الجديد ---
     if (document.getElementById('forgot-password-form')) {
         document.getElementById('forgot-password-form').addEventListener('submit', handleForgotPasswordForm);
     }
     if (document.getElementById('reset-password-form')) {
         document.getElementById('reset-password-form').addEventListener('submit', handleResetPasswordForm);
     }
-    // --- نهاية الجزء الجديد ---
+    if (document.getElementById('favorites-grid')) {
+        initializeFavoritesPage();
+    }
+
+    const passwordContainers = document.querySelectorAll('.password-container');
+    passwordContainers.forEach(container => {
+        setupPasswordToggle(container);
+    });
 }
 
 
@@ -196,23 +213,34 @@ function initializeContactForm() {
     });
 }
 
-
-function renderProducts(productsToRender, containerId = '.product-grid') {
-    const productGrid = document.querySelector(containerId);
+function renderProducts(productsToRender, containerSelector = '.product-grid') {
+    const productGrid = document.querySelector(containerSelector);
     if (!productGrid) return;
     productGrid.innerHTML = '';
 
-    if (productsToRender.length === 0 && containerId === '.product-grid') {
-        productGrid.innerHTML = `<div class="empty-cart-container" style="display:block; grid-column: 1 / -1; text-align: center;"><h2>لا توجد منتجات تطابق بحثك.</h2><p>حاول استخدام كلمات بحث مختلفة.</p></div>`;
+    if (productsToRender.length === 0) {
+        if (containerSelector === '#favorites-grid') {
+            document.getElementById('empty-favorites-message').style.display = 'block';
+        } else {
+            productGrid.innerHTML = `<div class="empty-cart-container" style="display:block; grid-column: 1 / -1; text-align: center;"><h2>لا توجد منتجات تطابق بحثك.</h2><p>حاول استخدام كلمات بحث مختلفة.</p></div>`;
+        }
         return;
+    }
+
+    if (containerSelector === '#favorites-grid') {
+        document.getElementById('empty-favorites-message').style.display = 'none';
     }
 
     productsToRender.forEach(product => {
         const totalStock = product.sizes.reduce((acc, size) => acc + size.stock, 0);
         const outOfStockBadge = totalStock === 0 ? '<div class="out-of-stock-badge">نفذت الكمية</div>' : '';
+        const isFavorited = wishlist.includes(product.id);
+        const wishlistIcon = userInfo ? `<div class="wishlist-icon-container"><div class="wishlist-icon ${isFavorited ? 'active' : ''}" data-product-id="${product.id}" title="إضافة للمفضلة">&#x2665;</div></div>` : '';
+
         const cardHTML = `
             <div class="product-card ${totalStock === 0 ? 'out-of-stock' : ''}">
-                <a href="product.html?id=${product.id}" style="text-decoration: none;">
+                ${wishlistIcon}
+                <a href="product.html?id=${product.id}" style="text-decoration: none; color: inherit;">
                     <div class="card-image">
                         ${outOfStockBadge}
                         <img src="${product.images[0]}" alt="${product.name}">
@@ -229,9 +257,64 @@ function renderProducts(productsToRender, containerId = '.product-grid') {
     });
 }
 
-function initializeHomePage(products, urlParams) {
+// --- بداية الجزء المعدل ---
+async function handleWishlistToggle(iconElement) {
+    if (!userInfo) {
+        showToast('يجب تسجيل الدخول أولاً لإضافة منتجات للمفضلة.', true);
+        return;
+    }
+    
+    const productId = parseInt(iconElement.dataset.productId);
+    const isFavorited = iconElement.classList.contains('active');
+    
+    const url = isFavorited ? '/api/users/wishlist/remove' : '/api/users/wishlist/add';
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userInfo.token}`
+            },
+            body: JSON.stringify({ productId })
+        });
+
+        if (response.ok) {
+            const updatedWishlist = await response.json();
+            wishlist = updatedWishlist; 
+            
+            const updatedUserInfo = { ...userInfo, wishlist: updatedWishlist };
+            localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
+
+            iconElement.classList.toggle('active');
+            
+            // لو بنضيف للمفضلة، نظهر الرسالة الجديدة
+            if (!isFavorited) {
+                const messageWithLink = `تم إضافة المنتج للمفضلة &nbsp; <a href='favorites.html' style='color: #0a192f; text-decoration: underline; font-weight: bold;'>عرض المفضلة</a>`;
+                showToast(messageWithLink);
+            } else {
+                showToast('تم حذف المنتج من المفضلة');
+                // لو كنا في صفحة المفضلة، نحذف الكارت من الواجهة فوراً
+                if (window.location.pathname.endsWith('favorites.html')) {
+                    iconElement.closest('.product-card').remove();
+                    if (document.querySelectorAll('#favorites-grid .product-card').length === 0) {
+                         document.getElementById('empty-favorites-message').style.display = 'block';
+                    }
+                }
+            }
+        } else {
+            throw new Error('فشل تحديث المفضلة');
+        }
+    } catch(error) {
+        showToast(error.message, true);
+    }
+}
+// --- نهاية الجزء المعدل ---
+
+
+function initializeHomePage(urlParams) {
     const category = urlParams.get('category');
-    let initialProducts = category ? products.filter(p => p.category === category && !p.isDeleted) : products.filter(p => !p.isDeleted);
+    let initialProducts = category ? allProducts.filter(p => p.category === category && !p.isDeleted) : allProducts.filter(p => !p.isDeleted);
     renderProducts(initialProducts);
 
     const searchBars = [document.getElementById('search-bar'), document.getElementById('mobile-search-bar')];
@@ -267,7 +350,7 @@ function initializeHomePage(products, urlParams) {
     });
 }
 
-async function initializeProductDetailPage(productId, allProducts) {
+async function initializeProductDetailPage(productId) {
     const productDetailLayout = document.querySelector('.product-detail-layout');
     try {
         const response = await fetch(`/api/products/${productId}`);
@@ -287,9 +370,7 @@ async function initializeProductDetailPage(productId, allProducts) {
             ).join('');
             setupImageSlider(sliderWrapper);
 
-            const sizeSelector = document.querySelector('.size-selector');
-            setupSizeSelector(product, sizeSelector);
-
+            setupSizeSelector(product, document.querySelector('.size-selector'));
             setupQuantitySelector();
 
             const addToCartButton = document.querySelector('.add-to-cart-btn');
@@ -300,6 +381,16 @@ async function initializeProductDetailPage(productId, allProducts) {
                     addToCart(product.id, quantity, selectedSize, allProducts);
                 });
             }
+
+            const wishlistBtn = document.getElementById('product-page-wishlist-btn');
+            if(wishlistBtn) {
+                wishlistBtn.dataset.productId = product.id;
+                if(wishlist.includes(product.id)) {
+                    wishlistBtn.classList.add('active');
+                }
+                wishlistBtn.addEventListener('click', () => handleWishlistToggle(wishlistBtn));
+            }
+
 
             if (relatedProducts && relatedProducts.length > 0) {
                 renderProducts(relatedProducts, '#related-products-grid');
@@ -371,6 +462,7 @@ function setupImageSlider(sliderWrapper) {
     if (totalSlides <= 1) {
         if(nextBtn) nextBtn.style.display = 'none';
         if(prevBtn) prevBtn.style.display = 'none';
+        if (slides.length > 0) slides[0].classList.add('active-slide');
         return;
     }
     
@@ -397,4 +489,28 @@ function setupImageSlider(sliderWrapper) {
         currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
         showSlide(currentIndex);
     });
+}
+
+async function initializeFavoritesPage() {
+    if (!userInfo) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    const favoritesGrid = document.getElementById('favorites-grid');
+    showSpinner(favoritesGrid);
+
+    try {
+        const response = await fetch('/api/users/wishlist', {
+            headers: { 'Authorization': `Bearer ${userInfo.token}` }
+        });
+        if (!response.ok) {
+            throw new Error('فشل جلب قائمة المفضلة.');
+        }
+        const favoritedProducts = await response.json();
+        renderProducts(favoritedProducts, '#favorites-grid');
+    } catch (error) {
+        showToast(error.message, true);
+        favoritesGrid.innerHTML = `<p style="text-align:center; color: #ff6b6b;">${error.message}</p>`;
+    }
 }

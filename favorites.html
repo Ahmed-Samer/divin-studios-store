@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تفاصيل المنتج - Zantiva Store</title>
+    <title>المفضلة - Zantiva Store</title>
     <link rel="icon" type="image/png" href="images/favicon.png">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -44,49 +44,19 @@
     </header>
 
     <main class="page-content">
-        <div class="product-detail-container">
-            <div class="product-detail-layout">
-                <div class="product-image-gallery">
-                    <div class="slider-wrapper"></div>
-                    <button class="slider-btn prev">&#10094;</button>
-                    <button class="slider-btn next">&#10095;</button>
+        <div class="static-page-container" style="background: none; padding-top: 0;">
+            <h1 style="color: #ffffff; border-bottom: 2px solid #64ffda; padding-bottom: 15px; margin-bottom: 35px;">قائمة المفضلة</h1>
+            <div id="favorites-grid" class="product-grid">
                 </div>
-                <div class="product-info-container">
-                    <h1 class="product-title-large">جاري تحميل المنتج...</h1>
-                    <p class="product-price-large">...</p>
-                    <div class="product-description"><p>جاري تحميل التفاصيل...</p></div>
-                    
-                    <div class="product-options">
-                        <div class="option-group">
-                            <label>المقاس:</label>
-                            <div class="size-selector">
-                            </div>
-                        </div>
-                        
-                        <div class="option-group">
-                            <label>الكمية:</label>
-                            <div class="quantity-selector">
-                                <button class="quantity-btn" id="minus-btn">-</button>
-                                <input type="number" id="quantity-input" value="1" min="1" readonly>
-                                <button class="quantity-btn" id="plus-btn">+</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="product-actions-container">
-                        <button class="add-to-cart-btn">أضف إلى السلة</button>
-                        <button class="btn-wishlist" id="product-page-wishlist-btn" title="إضافة إلى المفضلة">
-                            &#x2665; </button>
-                    </div>
-                    </div>
+            <div id="empty-favorites-message" style="display: none; text-align: center; padding: 60px 20px; background-color: #112240; border-radius: 8px;">
+                <div style="font-size: 80px; opacity: 0.5; margin-bottom: 20px;">❤️</div>
+                <h2 style="font-size: 32px; color: #ffffff; margin-bottom: 15px;">قائمة المفضلة فارغة!</h2>
+                <p style="font-size: 18px; line-height: 1.6; max-width: 500px; margin: 0 auto 30px auto;">
+                    لم تقم بإضافة أي منتجات إلى مفضلتك بعد. اضغط على أيقونة القلب على المنتجات التي تعجبك لإضافتها هنا.
+                </p>
+                <a href="index.html" class="btn">ابدأ التصفح</a>
             </div>
-
-            <div class="related-products-section">
-                <h2>منتجات قد تعجبك أيضًا</h2>
-                <div id="related-products-grid" class="product-grid">
-                    </div>
-            </div>
-            </div>
+        </div>
     </main>
 
     <footer class="main-footer">
@@ -101,7 +71,7 @@
     </footer>
 
     <div id="toast-container"></div>
-<script type="module" src="js/main.js"></script>
+    <script type="module" src="js/main.js"></script>
 
 </body>
 </html>

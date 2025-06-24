@@ -1,9 +1,58 @@
 import { showToast } from './cart.js';
 
-// --- بداية الجزء الجديد: إضافة دالة الـ Spinner ---
 function showSpinner(containerElement) {
     if (containerElement) {
         containerElement.innerHTML = `<div class="spinner-container"><div class="spinner"></div></div>`;
+    }
+}
+
+// --- بداية الجزء الجديد: دالة التعامل مع تغيير كلمة المرور ---
+async function handleChangePassword(event, token) {
+    event.preventDefault();
+    const currentPassword = document.getElementById('current-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmNewPassword = document.getElementById('confirm-new-password').value;
+    const submitBtn = event.target.querySelector('button');
+
+    // التحقق من البيانات في الواجهة الأمامية أولاً
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+        showToast('يرجى ملء جميع الحقول.', true);
+        return;
+    }
+    if (newPassword !== confirmNewPassword) {
+        showToast('كلمتا السر الجديدتان غير متطابقتين!', true);
+        return;
+    }
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+        showToast('كلمة السر الجديدة يجب أن تكون 8 أحرف على الأقل وتحتوي على أرقام وحروف.', true);
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'جاري التحديث...';
+
+    try {
+        const response = await fetch('/api/users/profile/password', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ currentPassword, newPassword })
+        });
+        const data = await response.json();
+        if (response.ok) {
+            showToast(data.message, false);
+            event.target.reset(); // مسح حقول النموذج بعد النجاح
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        showToast(error.message || 'حدث خطأ ما.', true);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'تحديث كلمة المرور';
     }
 }
 // --- نهاية الجزء الجديد ---
@@ -24,6 +73,13 @@ export function initializeProfilePage() {
     }
     
     fetchMyOrders(userInfo.token);
+
+    // --- بداية الجزء الجديد: ربط دالة تغيير كلمة المرور بالنموذج ---
+    const changePasswordForm = document.getElementById('change-password-form');
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', (event) => handleChangePassword(event, userInfo.token));
+    }
+    // --- نهاية الجزء الجديد ---
 }
 
 // دالة جلب الطلبات من السيرفر
@@ -31,7 +87,7 @@ async function fetchMyOrders(token) {
     const ordersListContainer = document.getElementById('my-orders-list');
     if (!ordersListContainer) return;
 
-    showSpinner(ordersListContainer); // إظهار الـ Spinner قبل جلب البيانات
+    showSpinner(ordersListContainer);
 
     try {
         const response = await fetch('/api/users/myorders', {

@@ -57,11 +57,17 @@
                 </div>
                 <div class="form-group">
                     <label for="password">كلمة السر</label>
-                    <input type="password" id="password" required>
+                    <div class="password-container">
+                        <input type="password" id="password" required>
+                        <span class="password-toggle-icon">👁️</span>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="confirm-password">تأكيد كلمة السر</label>
-                    <input type="password" id="confirm-password" required>
+                    <div class="password-container">
+                        <input type="password" id="confirm-password" required>
+                        <span class="password-toggle-icon">👁️</span>
+                    </div>
                 </div>
                 <button type="submit" class="btn" style="width: 100%;">إنشاء الحساب</button>
             </form>
@@ -84,5 +90,5 @@
 
     <div id="toast-container"></div>
     <script type="module" src="js/main.js"></script>
-    </body>
+</body>
 </html>

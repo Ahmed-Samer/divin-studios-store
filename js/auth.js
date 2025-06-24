@@ -76,8 +76,26 @@ export function initializeRegisterPageListeners() {
     });
 }
 
+// --- دالة إظهار/إخفاء كلمة المرور ---
+export function setupPasswordToggle(container) {
+    const passwordInput = container.querySelector('input');
+    const toggleIcon = container.querySelector('.password-toggle-icon');
 
-// --- منطق المستخدمين المعدل ---
+    if (passwordInput && toggleIcon) {
+        toggleIcon.addEventListener('click', () => {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.textContent = '🙈';
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.textContent = '👁️';
+            }
+        });
+    }
+}
+
+
+// --- منطق المستخدمين ---
 export async function handleRegisterForm(event) {
     event.preventDefault();
     const name = document.getElementById('name').value;
@@ -169,6 +187,7 @@ function handleLogout() {
     window.location.href = 'login.html';
 }
 
+// --- بداية الجزء المعدل ---
 export function updateUserNav() {
     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
     const userActionsContainer = document.getElementById('user-actions');
@@ -186,11 +205,15 @@ export function updateUserNav() {
             </button>
             <ul class="user-dropdown-menu">
                 <li><a href="profile.html">حسابي</a></li>
+                <li><a href="favorites.html">المفضلة</a></li>
+                <li class="separator"></li>
                 <li><a href="#" id="logout-link">تسجيل الخروج</a></li>
             </ul>
         `;
         userNavMobileContainer.innerHTML = `
             <li><a href="profile.html">حسابي</a></li>
+            <li><a href="favorites.html">المفضلة</a></li>
+            <li class="separator"></li>
             <li><a href="#" id="logout-link-mobile">تسجيل الخروج</a></li>
         `;
     } else {
@@ -204,7 +227,8 @@ export function updateUserNav() {
         `;
     }
 
-    if (currentContent !== newContent) {
+    // يتم التحديث فقط إذا تغير المحتوى لتجنب إعادة ربط الأحداث بدون داعي
+    if (currentContent.trim() !== newContent.trim()) {
         userActionsContainer.innerHTML = newContent;
 
         if (userInfo) {
@@ -218,8 +242,9 @@ export function updateUserNav() {
         }
     }
 }
+// --- نهاية الجزء المعدل ---
 
-// --- بداية الجزء الجديد: دوال استعادة كلمة المرور ---
+
 export async function handleForgotPasswordForm(event) {
     event.preventDefault();
     const email = document.getElementById('email').value;
@@ -235,7 +260,7 @@ export async function handleForgotPasswordForm(event) {
             body: JSON.stringify({ email })
         });
         const data = await response.json();
-        showToast(data.message); // إظهار رسالة السيرفر للمستخدم
+        showToast(data.message);
     } catch (error) {
         showToast('حدث خطأ. يرجى المحاولة مرة أخرى.', true);
     } finally {
@@ -246,8 +271,8 @@ export async function handleForgotPasswordForm(event) {
 
 export async function handleResetPasswordForm(event) {
     event.preventDefault();
-    const password = document.getElementById('password').value;
-    const confirmPassword = document.getElementById('confirm-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmNewPassword = document.getElementById('confirm-new-password').value;
     const submitBtn = event.target.querySelector('button');
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -257,13 +282,14 @@ export async function handleResetPasswordForm(event) {
         showToast('رابط إعادة التعيين غير صالح أو مفقود.', true);
         return;
     }
-
+    
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
-    if (!passwordRegex.test(password)) {
-        showToast('كلمة السر يجب أن تكون 8 أحرف على الأقل وتحتوي على أرقام وحروف.', true);
+    if (!passwordRegex.test(newPassword)) {
+        showToast('كلمة السر الجديدة يجب أن تكون 8 أحرف على الأقل وتحتوي على أرقام وحروف.', true);
         return;
     }
-    if (password !== confirmPassword) {
+
+    if (newPassword !== confirmNewPassword) {
         showToast('كلمتا السر غير متطابقتين!', true);
         return;
     }
@@ -275,20 +301,19 @@ export async function handleResetPasswordForm(event) {
         const response = await fetch(`/api/users/reset-password/${token}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password })
+            body: JSON.stringify({ password: newPassword })
         });
         const data = await response.json();
         if (response.ok) {
-            showToast(data.message, false); // false تجعل لونها أخضر للنجاح
+            showToast(data.message, false);
             submitBtn.textContent = 'تم التحديث بنجاح';
             setTimeout(() => { window.location.href = 'login.html'; }, 3000);
         } else {
             throw new Error(data.message);
         }
     } catch (error) {
-        showToast(error.message, true);
+        showToast(error.message || 'حدث خطأ ما.', true);
         submitBtn.disabled = false;
         submitBtn.textContent = 'تحديث كلمة المرور';
     }
 }
-// --- نهاية الجزء الجديد ---

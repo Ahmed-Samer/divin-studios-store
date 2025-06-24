@@ -122,9 +122,12 @@ body { font-family: Arial, sans-serif; margin: 0; background-color: #0a192f; col
 .user-dropdown-menu li a:hover {
     background-color: #3a5b8e;
 }
-.user-dropdown-menu li:first-child {
-    border-bottom: 1px solid #3a5b8e;
+.user-dropdown-menu li.separator {
+    height: 1px;
+    background-color: #3a5b8e;
+    margin: 8px 0;
 }
+
 
 /* --- تصميم صفحة السلة --- */
 .cart-page-container h1, .checkout-page-container h1, .static-page-container h1 { 
@@ -204,6 +207,13 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 .product-title-large { font-size: 42px; color: #ffffff; margin-top: 0; margin-bottom: 15px; border: none; }
 .product-price-large { font-size: 28px; color: #64ffda; font-weight: bold; margin-bottom: 25px; }
 .product-description { font-size: 16px; line-height: 1.7; margin-bottom: 30px; }
+.product-actions-container {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
 .product-options { display: flex; flex-direction: column; gap: 20px; margin-bottom: 30px; }
 .option-group { margin-bottom: 20px; }
 .option-group label { display: block; margin-bottom: 10px; font-weight: bold; font-size: 18px; }
@@ -212,7 +222,7 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 .size-btn:hover { background-color: #2a4162; border-color: #64ffda; }
 .size-btn.active { background-color: #64ffda; color: #0a192f; border-color: #64ffda; }
 .size-btn.disabled { background-color: #112240; color: #8892b0; border-color: #3a5b8e; cursor: not-allowed; text-decoration: line-through; }
-.add-to-cart-btn { background-color: #64ffda; color: #0a192f; border: none; padding: 15px 30px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease; align-self: flex-start; }
+.add-to-cart-btn { background-color: #64ffda; color: #0a192f; border: none; padding: 15px 30px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease; }
 .add-to-cart-btn:hover { background-color: #ffffff; transform: scale(1.05); }
 .quantity-selector { display: flex; align-items: center; gap: 10px; }
 .quantity-selector .quantity-btn { background-color: #2a4162; border: 1px solid #3a5b8e; color: #ccd6f6; width: 40px; height: 40px; font-size: 20px; font-weight: bold; border-radius: 50%; cursor: pointer; transition: background-color 0.3s; }
@@ -291,7 +301,25 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 .error-message { color: #ff6b6b; font-size: 13px; margin-top: 5px; display: none; }
 .form-group input.invalid, .form-group textarea.invalid { border-color: #ff6b6b; }
 
-/* --- بداية الجزء الجديد --- */
+/* --- تنسيقات أيقونة إظهار كلمة المرور --- */
+.password-container {
+    position: relative;
+    width: 100%;
+}
+.password-container input {
+    padding-left: 45px; /* مساحة للأيقونة على اليسار (لأننا في وضع RTL) */
+}
+.password-toggle-icon {
+    position: absolute;
+    top: 50%;
+    left: 15px; /* مكان الأيقونة على اليسار */
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #a8b2d1;
+    user-select: none; /* لمنع تحديد الأيقونة كنص */
+    font-size: 20px;
+}
+
 .form-link-container {
     text-align: center;
     margin-top: 15px;
@@ -305,7 +333,6 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 .form-link:hover {
     color: #64ffda;
 }
-/* --- نهاية الجزء الجديد --- */
 
 /* --- تصميم الصفحات الثابتة ولوحة التحكم --- */
 .static-page-container, .admin-page-container { background-color: #112240; padding: 40px; border-radius: 8px; max-width: 900px; margin: 40px auto; }
@@ -503,3 +530,54 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 .remove-size-btn { background-color: #e74c3c; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 20px; font-weight: bold; cursor: pointer; line-height: 30px; padding: 0; text-align: center; transition: background-color 0.3s ease, transform 0.2s ease; }
 .remove-size-btn:hover { background-color: #c0392b; transform: scale(1.1); }
 #add-size-btn { font-weight: bold; }
+
+
+/* --- بداية الجزء الجديد: تنسيق أيقونة المفضلة --- */
+.wishlist-icon-container {
+    position: absolute;
+    top: 10px;
+    left: 10px; /* عكس الـ out-of-stock-badge */
+    z-index: 11;
+}
+
+.wishlist-icon {
+    font-size: 28px;
+    color: #ffffff;
+    cursor: pointer;
+    transition: color 0.3s ease, transform 0.3s ease;
+    text-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
+.wishlist-icon:hover {
+    transform: scale(1.2);
+}
+
+.wishlist-icon.active {
+    color: #e74c3c; /* لون القلب الأحمر عند الإضافة للمفضلة */
+}
+
+/* زرار المفضلة في صفحة المنتج */
+.btn-wishlist {
+    background-color: transparent;
+    border: 2px solid #a8b2d1;
+    color: #a8b2d1;
+    padding: 15px;
+    font-size: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    line-height: 1;
+    transition: all 0.3s ease;
+}
+
+.btn-wishlist:hover {
+    border-color: #e74c3c;
+    color: #e74c3c;
+    transform: scale(1.1);
+}
+
+.btn-wishlist.active {
+    background-color: #e74c3c;
+    border-color: #e74c3c;
+    color: #ffffff;
+}
+/* --- نهاية الجزء الجديد --- */
