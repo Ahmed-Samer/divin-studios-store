@@ -19,7 +19,7 @@
 
                 <div class="accordion-item">
                     <button class="accordion-header">
-                        <span id="form-title-accordion">إضافة منتج جديد</span>
+                        <span id="form-title-accordion">إضافة/تعديل منتج</span>
                         <span class="accordion-icon">+</span>
                     </button>
                     <div class="accordion-content">
@@ -90,6 +90,48 @@
 
                 <div class="accordion-item">
                     <button class="accordion-header">
+                        <span>إدارة كوبونات الخصم</span>
+                        <span class="accordion-icon">+</span>
+                    </button>
+                    <div class="accordion-content">
+                        <h4 id="coupon-form-title">إنشاء كوبون جديد</h4>
+                        <form id="add-coupon-form" class="checkout-form">
+                            <input type="hidden" id="coupon-id">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="coupon-code">كود الكوبون</label>
+                                    <input type="text" id="coupon-code" placeholder="E.g., RAMADAN25" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="coupon-expiry">تاريخ الانتهاء</label>
+                                    <input type="date" id="coupon-expiry" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="coupon-type">نوع الخصم</label>
+                                    <select id="coupon-type" required>
+                                        <option value="percentage">نسبة مئوية (%)</option>
+                                        <option value="fixed">مبلغ ثابت (ج.م)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="coupon-value">قيمة الخصم</label>
+                                    <input type="number" id="coupon-value" min="0" required>
+                                </div>
+                            </div>
+                             <button type="submit" class="btn" id="coupon-submit-btn">إنشاء الكوبون</button>
+                             <button type="button" class="btn btn-secondary" id="cancel-coupon-edit-btn" style="display: none; margin-right: 10px;">إلغاء التعديل</button>
+                             </form>
+                        <hr style="border-color: #3a5b8e; margin: 30px 0;">
+                        <h4>الكوبونات الحالية</h4>
+                        <div id="manage-coupons-list">
+                            </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <button class="accordion-header">
                         <span>إدارة الطلبات</span>
                         <span class="accordion-icon">+</span>
                     </button>
@@ -111,6 +153,8 @@
             </div>
             </main>
     </div>
+
+    <div id="order-details-modal" class="modal-overlay"></div>
 
     <div id="toast-container"></div>
     <script type="module" src="js/main.js"></script>

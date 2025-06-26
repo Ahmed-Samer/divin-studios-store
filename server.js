@@ -10,7 +10,8 @@ const nodemailer = require('nodemailer');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
-const axios = require('axios'); // <-- إضافة جديدة
+const axios = require('axios');
+const Coupon = require('./models/coupon.model.js');
 
 const app = express();
 app.use(cors());
@@ -145,7 +146,7 @@ const productSchema = new mongoose.Schema({
 const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
 
 
-// --- Order Schema and Model ---
+// --- Order Schema and Model (مُعدل) ---
 const orderSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -165,6 +166,13 @@ const orderSchema = new mongoose.Schema({
         quantity: { type: Number, required: true },
         size: { type: String, required: true }
     }],
+    // --- بداية الجزء المعدل ---
+    subtotal: { type: Number }, // تم إزالة required: true
+    // --- نهاية الجزء المعدل ---
+    discount: {
+        code: String,
+        amount: Number
+    },
     totalPrice: { type: Number, required: true },
     status: { type: String, default: 'قيد المراجعة', enum: ['قيد المراجعة', 'تم التأكيد', 'تم الشحن', 'تم التوصيل', 'ملغي'] },
     createdAt: { type: Date, default: Date.now }
@@ -288,7 +296,7 @@ app.post('/api/users/forgot-password', async (req, res) => {
         const resetURL = `${req.protocol}://${req.get('host')}/reset-password.html?token=${resetToken}`;
         const message = `لقد طلبت إعادة تعيين كلمة المرور. برجاء الضغط على الرابط التالي (أو نسخه ولصقه في متصفحك) لإعادة تعيين كلمة المرور الخاصة بك. هذا الرابط صالح لمدة 15 دقيقة فقط:\n\n${resetURL}`;
         const transporter = nodemailer.createTransport({
-            service: 'gmail', // تم التعديل لاستخدام خدمة Gmail مباشرة
+            service: 'gmail',
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS,
@@ -432,7 +440,74 @@ app.post('/api/users/wishlist/remove', protect, async (req, res) => {
 });
 
 
-// --- بداية الـ Endpoint الجديد الخاص بـ EmailJS ---
+// --- COUPON APIS ---
+app.post('/api/coupons', protect, admin, async (req, res) => {
+    try {
+        const { code, discountType, value, expiryDate } = req.body;
+        const newCoupon = new Coupon({ code, discountType, value, expiryDate });
+        const savedCoupon = await newCoupon.save();
+        res.status(201).json(savedCoupon);
+    } catch (error) {
+        res.status(400).json({ message: 'فشل إنشاء الكوبون. تأكد أن الكود غير مكرر.' });
+    }
+});
+
+app.get('/api/coupons', protect, admin, async (req, res) => {
+    try {
+        const coupons = await Coupon.find({});
+        res.json(coupons);
+    } catch (error) {
+        res.status(500).json({ message: 'فشل في جلب الكوبونات.' });
+    }
+});
+
+app.put('/api/coupons/:id', protect, admin, async (req, res) => {
+    try {
+        const coupon = await Coupon.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!coupon) {
+            return res.status(404).json({ message: 'الكوبون غير موجود.' });
+        }
+        res.json(coupon);
+    } catch (error) {
+        res.status(400).json({ message: 'فشل تحديث الكوبون.' });
+    }
+});
+
+app.delete('/api/coupons/:id', protect, admin, async (req, res) => {
+    try {
+        const coupon = await Coupon.findByIdAndDelete(req.params.id);
+        if (!coupon) {
+            return res.status(404).json({ message: 'الكوبون غير موجود.' });
+        }
+        res.json({ message: 'تم حذف الكوبون بنجاح.' });
+    } catch (error) {
+        res.status(500).json({ message: 'فشل حذف الكوبون.' });
+    }
+});
+
+app.post('/api/coupons/verify', async (req, res) => {
+    try {
+        const { code } = req.body;
+        const coupon = await Coupon.findOne({ code: code.toUpperCase() });
+
+        if (!coupon) {
+            return res.status(404).json({ message: 'كود الخصم غير صحيح.' });
+        }
+        if (!coupon.isActive) {
+            return res.status(400).json({ message: 'هذا الكوبون غير فعال حالياً.' });
+        }
+        if (coupon.expiryDate < new Date()) {
+            return res.status(400).json({ message: 'هذا الكوبون منتهي الصلاحية.' });
+        }
+
+        res.json(coupon);
+    } catch (error) {
+        res.status(500).json({ message: 'خطأ في التحقق من الكوبون.' });
+    }
+});
+
+
+// --- Contact Form API ---
 app.post('/api/contact', async (req, res) => {
     const { from_name, from_email, message } = req.body;
 
@@ -440,7 +515,7 @@ app.post('/api/contact', async (req, res) => {
         service_id: process.env.EMAILJS_SERVICE_ID,
         template_id: process.env.EMAILJS_TEMPLATE_ID,
         user_id: process.env.EMAILJS_PUBLIC_KEY,
-        accessToken: process.env.EMAILJS_PRIVATE_KEY, // المفتاح السري
+        accessToken: process.env.EMAILJS_PRIVATE_KEY,
         template_params: {
             from_name,
             from_email,
@@ -460,7 +535,6 @@ app.post('/api/contact', async (req, res) => {
         res.status(500).json({ message: 'فشل إرسال الرسالة من السيرفر.' });
     }
 });
-// --- نهاية الـ Endpoint الجديد ---
 
 
 // --- Products API ---
@@ -491,7 +565,7 @@ app.post('/api/orders', async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-        const { customerDetails, cartItems } = req.body;
+        const { customerDetails, cartItems, couponCode } = req.body;
         let user = null;
         let token = null;
 
@@ -518,14 +592,40 @@ app.post('/api/orders', async (req, res) => {
             if (sizeVariant.stock < item.quantity) { throw new Error(`الكمية المطلوبة من منتج '${product.name}' مقاس '${item.size}' غير متوفرة.`); }
         }
 
-        let totalPrice = 0;
+        let subtotal = 0;
         const orderedProducts = cartItems.map(item => {
             const product = productsFromDB.find(p => p.id == item.id);
-            totalPrice += product.price * item.quantity;
+            subtotal += product.price * item.quantity;
             return { productId: product.id, name: product.name, price: product.price, quantity: item.quantity, size: item.size };
         });
 
-        const newOrderData = { customerDetails, products: orderedProducts, totalPrice };
+        let finalPrice = subtotal;
+        let appliedDiscount = null;
+
+        if (couponCode) {
+            const coupon = await Coupon.findOne({ code: couponCode, isActive: true, expiryDate: { $gt: new Date() } }).session(session);
+            if (coupon) {
+                let discountAmount = 0;
+                if (coupon.discountType === 'percentage') {
+                    discountAmount = (subtotal * coupon.value) / 100;
+                } else { 
+                    discountAmount = coupon.value;
+                }
+                finalPrice = subtotal - discountAmount;
+                if (finalPrice < 0) finalPrice = 0;
+                
+                appliedDiscount = { code: coupon.code, amount: discountAmount };
+            }
+        }
+
+        const newOrderData = { 
+            customerDetails, 
+            products: orderedProducts, 
+            subtotal: subtotal,
+            discount: appliedDiscount,
+            totalPrice: finalPrice 
+        };
+
         if (user) {
             newOrderData.user = user._id;
         }
@@ -558,7 +658,14 @@ app.post('/api/orders', async (req, res) => {
     }
 });
 
-app.get('/api/orders', protect, admin, async (req, res) => { try { const orders = await Order.find().sort({ createdAt: -1 }); res.json(orders); } catch (error) { res.status(500).json({ message: 'فشل في جلب الطلبات' }); } });
+app.get('/api/orders', protect, admin, async (req, res) => { 
+    try { 
+        const orders = await Order.find({}).populate('user', 'name email').sort({ createdAt: -1 }); 
+        res.json(orders); 
+    } catch (error) { 
+        res.status(500).json({ message: 'فشل في جلب الطلبات' }); 
+    } 
+});
 
 app.put('/api/orders/:id/status', protect, admin, async (req, res) => {
     const { id } = req.params;

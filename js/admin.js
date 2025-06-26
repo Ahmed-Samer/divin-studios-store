@@ -2,16 +2,15 @@ import { showToast } from './cart.js';
 
 let allProducts = [];
 let allOrders = [];
+let allCoupons = [];
 let currentAdminCategoryFilter = 'all';
 let authToken = '';
 
-// --- بداية الجزء الجديد: إضافة دالة الـ Spinner ---
 function showSpinner(containerElement) {
     if (containerElement) {
         containerElement.innerHTML = `<div class="spinner-container"><div class="spinner"></div></div>`;
     }
 }
-// --- نهاية الجزء الجديد ---
 
 
 // الدالة الرئيسية اللي بتشغل كل حاجة في صفحة الأدمن
@@ -31,6 +30,7 @@ export function initializeAdminPage(products) {
     resetAdminForm();
     displayAdminOrders();
     displayDeletedProducts();
+    displayAdminCoupons();
     applyAdminFiltersAndSearch();
 }
 
@@ -68,7 +68,14 @@ function setupAccordion() {
 
 function setupAdminEventListeners() {
     const adminForm = document.getElementById('add-product-form');
-    if (!adminForm) return;
+    if(adminForm) adminForm.addEventListener('submit', handleProductFormSubmit);
+    
+    const couponForm = document.getElementById('add-coupon-form');
+    if(couponForm) couponForm.addEventListener('submit', handleCouponFormSubmit);
+    
+    const cancelCouponEditBtn = document.getElementById('cancel-coupon-edit-btn');
+    if(cancelCouponEditBtn) cancelCouponEditBtn.addEventListener('click', resetCouponForm);
+
 
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -89,8 +96,169 @@ function setupAdminEventListeners() {
     const addSizeBtn = document.getElementById('add-size-btn');
     if(addSizeBtn) addSizeBtn.addEventListener('click', () => addSizeStockRow());
 
-    adminForm.addEventListener('submit', handleProductFormSubmit);
+    // Event Delegation for coupon buttons
+    const couponListContainer = document.getElementById('manage-coupons-list');
+    if(couponListContainer) {
+        couponListContainer.addEventListener('click', (event) => {
+            if (event.target.classList.contains('btn-edit-coupon')) {
+                handleEditCoupon(event.target.dataset.id);
+            }
+            if (event.target.classList.contains('btn-delete-coupon')) {
+                handleDeleteCoupon(event.target.dataset.id);
+            }
+        });
+    }
 }
+
+// --- دوال الكوبونات (معدلة بالكامل) ---
+async function displayAdminCoupons() {
+    const listContainer = document.getElementById('manage-coupons-list');
+    if (!listContainer) return;
+    showSpinner(listContainer);
+    try {
+        const response = await fetch('/api/coupons', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (!response.ok) throw new Error('فشل جلب الكوبونات');
+        allCoupons = await response.json();
+        
+        listContainer.innerHTML = '';
+        if (allCoupons.length === 0) {
+            listContainer.innerHTML = '<p style="text-align:center;">لا توجد كوبونات حاليًا.</p>';
+            return;
+        }
+
+        const table = document.createElement('table');
+        table.className = 'order-products-table';
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>الكود</th>
+                    <th>النوع</th>
+                    <th>القيمة</th>
+                    <th>تاريخ الإنتهاء</th>
+                    <th>الحالة</th>
+                    <th>التحكم</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        `;
+        const tbody = table.querySelector('tbody');
+        allCoupons.forEach(coupon => {
+            const expiry = new Date(coupon.expiryDate).toLocaleDateString('ar-EG');
+            const type = coupon.discountType === 'percentage' ? 'نسبة %' : 'مبلغ ثابت';
+            const status = coupon.isActive && new Date(coupon.expiryDate) > new Date() ? 'فعال' : 'غير فعال';
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${coupon.code}</td>
+                <td>${type}</td>
+                <td>${coupon.value}</td>
+                <td>${expiry}</td>
+                <td><span style="color: ${status === 'فعال' ? '#2ecc71' : '#e74c3c'}; font-weight: bold;">${status}</span></td>
+                <td>
+                    <button class="btn-edit btn-edit-coupon" data-id="${coupon._id}">تعديل</button>
+                    <button class="btn-delete btn-delete-coupon" data-id="${coupon._id}">حذف</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+        listContainer.appendChild(table);
+
+    } catch (error) {
+        listContainer.innerHTML = `<p style="text-align:center; color: #ff6b6b;">${error.message}</p>`;
+    }
+}
+
+function handleEditCoupon(id) {
+    const coupon = allCoupons.find(c => c._id === id);
+    if (!coupon) return;
+
+    document.getElementById('coupon-id').value = coupon._id;
+    document.getElementById('coupon-code').value = coupon.code;
+    document.getElementById('coupon-type').value = coupon.discountType;
+    document.getElementById('coupon-value').value = coupon.value;
+    // Format date for the date input which requires YYYY-MM-DD
+    document.getElementById('coupon-expiry').value = new Date(coupon.expiryDate).toISOString().split('T')[0];
+
+    document.getElementById('coupon-form-title').textContent = `تعديل الكوبون: ${coupon.code}`;
+    document.getElementById('coupon-submit-btn').textContent = 'تحديث الكوبون';
+    document.getElementById('cancel-coupon-edit-btn').style.display = 'inline-block';
+}
+
+function resetCouponForm() {
+    document.getElementById('add-coupon-form').reset();
+    document.getElementById('coupon-id').value = '';
+    document.getElementById('coupon-form-title').textContent = 'إنشاء كوبون جديد';
+    document.getElementById('coupon-submit-btn').textContent = 'إنشاء الكوبون';
+    document.getElementById('cancel-coupon-edit-btn').style.display = 'none';
+}
+
+async function handleDeleteCoupon(id) {
+    if (!confirm(`هل أنت متأكد من حذف هذا الكوبون؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+
+    try {
+        const response = await fetch(`/api/coupons/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await response.json();
+        if (response.ok) {
+            showToast(data.message);
+            displayAdminCoupons(); // Refresh the list
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        showToast(error.message, true);
+    }
+}
+
+async function handleCouponFormSubmit(event) {
+    event.preventDefault();
+
+    const couponId = document.getElementById('coupon-id').value;
+    const isEditMode = !!couponId;
+
+    const couponData = {
+        code: document.getElementById('coupon-code').value.toUpperCase(),
+        discountType: document.getElementById('coupon-type').value,
+        value: document.getElementById('coupon-value').value,
+        expiryDate: document.getElementById('coupon-expiry').value
+    };
+
+    if (!couponData.code || !couponData.value || !couponData.expiryDate) {
+        showToast('يرجى ملء جميع حقول الكوبون.', true);
+        return;
+    }
+
+    const url = isEditMode ? `/api/coupons/${couponId}` : '/api/coupons';
+    const method = isEditMode ? 'PUT' : 'POST';
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify(couponData)
+        });
+        const data = await response.json();
+        if (response.ok) {
+            showToast(isEditMode ? 'تم تحديث الكوبون بنجاح!' : 'تم إنشاء الكوبون بنجاح!');
+            resetCouponForm();
+            displayAdminCoupons(); // تحديث القائمة
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        showToast(error.message, true);
+    }
+}
+// --- نهاية دوال الكوبونات ---
+
 
 function applyAdminFiltersAndSearch() { 
     const searchBar = document.getElementById('admin-search-bar');
@@ -126,7 +294,7 @@ function displayAdminProducts(productsToDisplay) {
 async function displayDeletedProducts() { 
     const listContainer = document.getElementById('deleted-products-list');
     if (!listContainer) return;
-    showSpinner(listContainer); // إظهار الـ Spinner
+    showSpinner(listContainer); 
     try {
         const response = await fetch('/api/products/deleted', {
             headers: { 'Authorization': `Bearer ${authToken}` }
@@ -156,7 +324,7 @@ async function displayDeletedProducts() {
 async function displayAdminOrders() { 
     const listContainer = document.getElementById('manage-orders-list');
     if (!listContainer) return;
-    showSpinner(listContainer); // إظهار الـ Spinner
+    showSpinner(listContainer); 
     try {
         const response = await fetch('/api/orders', {
             headers: { 'Authorization': `Bearer ${authToken}` }
@@ -167,25 +335,102 @@ async function displayAdminOrders() {
         }
         allOrders = await response.json();
         listContainer.innerHTML = '';
-        if (allOrders.length === 0) { listContainer.innerHTML = '<p style="text-align:center;">لا توجد أي طلبات حاليًا.</p>'; return; }
+        if (allOrders.length === 0) { 
+            listContainer.innerHTML = '<p style="text-align:center;">لا توجد أي طلبات حاليًا.</p>'; 
+            return; 
+        }
         allOrders.forEach(order => {
             const orderDate = new Date(order.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-            const orderItemHTML = `<div class="managed-order-item" id="order-${order._id}"><div class="managed-order-info"><p><strong>العميل:</strong> <span>${order.customerDetails.fullName}</span></p><p><strong>الإجمالي:</strong> <span>${order.totalPrice} ج.م</span></p><p><strong>تاريخ الطلب:</strong> <span>${orderDate}</span></p><p><strong>الحالة:</strong> <span class="status">${order.status}</span></p></div><div class="managed-order-controls"><button class="btn btn-secondary btn-view-details" data-order-id="${order._id}">عرض التفاصيل</button></div></div>`;
+            const customerName = order.user 
+                ? `${order.user.name} (${order.user.email})` 
+                : `${order.customerDetails.fullName} (ضيف)`;
+
+            const orderItemHTML = `
+                <div class="managed-order-item" id="order-${order._id}">
+                    <div class="managed-order-info">
+                        <p><strong>العميل:</strong> <span>${customerName}</span></p>
+                        <p><strong>الإجمالي:</strong> <span>${order.totalPrice.toFixed(2)} ج.م</span></p>
+                        <p><strong>تاريخ الطلب:</strong> <span>${orderDate}</span></p>
+                        <p><strong>الحالة:</strong> <span class="status">${order.status}</span></p>
+                    </div>
+                    <div class="managed-order-controls">
+                        <button class="btn btn-secondary btn-view-details" data-order-id="${order._id}">عرض التفاصيل</button>
+                    </div>
+                </div>`;
             listContainer.innerHTML += orderItemHTML;
         });
-        document.querySelectorAll('.btn-view-details').forEach(button => { button.addEventListener('click', (event) => { createOrderDetailsModal(event.target.dataset.orderId); }); });
-    } catch (error) { listContainer.innerHTML = `<p style="text-align:center; color: #ff6b6b;">${error.message}</p>`; console.error(error); }
+        document.querySelectorAll('.btn-view-details').forEach(button => { 
+            button.addEventListener('click', (event) => { createOrderDetailsModal(event.target.dataset.orderId); }); 
+        });
+    } catch (error) { 
+        listContainer.innerHTML = `<p style="text-align:center; color: #ff6b6b;">${error.message}</p>`; 
+        console.error(error); 
+    }
 }
 
 function createOrderDetailsModal(orderId) { 
     const order = allOrders.find(o => o._id === orderId);
     if (!order) return;
+    
+    const oldModal = document.getElementById('order-details-modal');
+    if (oldModal) oldModal.remove();
+
     const modalOverlay = document.createElement('div');
+    modalOverlay.id = 'order-details-modal';
     modalOverlay.className = 'modal-overlay';
+    
     const statuses = ['قيد المراجعة', 'تم التأكيد', 'تم الشحن', 'تم التوصيل', 'ملغي'];
     const statusOptions = statuses.map(s => `<option value="${s}" ${s === order.status ? 'selected' : ''}>${s}</option>`).join('');
-    const productsRows = order.products.map(p => `<tr><td>${p.name}</td><td>${p.size}</td><td>${p.quantity}</td><td>${p.price} ج.م</td></tr>`).join('');
-    modalOverlay.innerHTML = ` <div class="modal-content"> <button class="modal-close-btn">&times;</button> <h3>تفاصيل الطلب (رقم: ${order._id})</h3> <h4>بيانات العميل</h4> <div class="order-details-grid"> <p><strong>الاسم:</strong> ${order.customerDetails.fullName}</p> <p><strong>الهاتف:</strong> ${order.customerDetails.phone}</p> <p><strong>المحافظة:</strong> ${order.customerDetails.governorate}</p> <p><strong>المدينة:</strong> ${order.customerDetails.city}</p> <p><strong>العنوان بالتفصيل:</strong> ${order.customerDetails.address}</p> </div> <h4>المنتجات المطلوبة</h4> <table class="order-products-table"> <thead><tr><th>المنتج</th><th>المقاس</th><th>الكمية</th><th>السعر</th></tr></thead> <tbody>${productsRows}</tbody> </table> <form class="status-update-form"> <label for="status-select">تغيير حالة الطلب:</label> <select id="status-select">${statusOptions}</select> <button type="submit" class="btn">حفظ التغييرات</button> </form> </div> `;
+    const productsRows = order.products.map(p => `<tr><td>${p.name}</td><td>${p.size}</td><td>${p.quantity}</td><td>${p.price.toFixed(2)} ج.م</td></tr>`).join('');
+    
+    const customerName = order.user ? order.user.name : order.customerDetails.fullName;
+    const customerIdentifier = order.user ? `(${order.user.email})` : '(ضيف)';
+
+    const subtotal = order.subtotal !== undefined ? order.subtotal : order.totalPrice;
+    const finalPrice = order.totalPrice;
+    
+    const discountHTML = (order.discount && order.discount.amount > 0)
+        ? `<div class="summary-row">
+               <span>الخصم (${order.discount.code})</span>
+               <span style="color: #2ecc71;">-${order.discount.amount.toFixed(2)} ج.م</span>
+           </div>`
+        : '';
+
+    modalOverlay.innerHTML = `
+        <div class="modal-content">
+            <button class="modal-close-btn">&times;</button>
+            <h3>تفاصيل الطلب (رقم: ${order._id})</h3>
+            <h4>بيانات العميل</h4>
+            <div class="order-details-grid">
+                <p><strong>الاسم:</strong> ${customerName} <em>${customerIdentifier}</em></p>
+                <p><strong>الهاتف:</strong> ${order.customerDetails.phone}</p>
+                <p><strong>المحافظة:</strong> ${order.customerDetails.governorate}</p>
+                <p><strong>المدينة:</strong> ${order.customerDetails.city}</p>
+                <p><strong>العنوان بالتفصيل:</strong> ${order.customerDetails.address}</p>
+            </div>
+            <h4>المنتجات المطلوبة</h4>
+            <table class="order-products-table">
+                <thead><tr><th>المنتج</th><th>المقاس</th><th>الكمية</th><th>السعر</th></tr></thead>
+                <tbody>${productsRows}</tbody>
+            </table>
+            <div class="summary-details" style="border-top: 1px solid #3a5b8e; padding-top: 15px; margin-top: 15px;">
+                <div class="summary-row">
+                    <span>الإجمالي الفرعي</span>
+                    <span>${subtotal.toFixed(2)} ج.م</span>
+                </div>
+                ${discountHTML}
+                <div class="summary-total">
+                    <span>الإجمالي النهائي</span>
+                    <span>${finalPrice.toFixed(2)} ج.م</span>
+                </div>
+            </div>
+            <form class="status-update-form">
+                <label for="status-select">تغيير حالة الطلب:</label>
+                <select id="status-select">${statusOptions}</select>
+                <button type="submit" class="btn">حفظ التغييرات</button>
+            </form>
+        </div>`;
+    
     document.body.appendChild(modalOverlay);
     setTimeout(() => modalOverlay.classList.add('active'), 10);
     const closeModal = () => { modalOverlay.classList.remove('active'); setTimeout(() => modalOverlay.remove(), 300); };
@@ -320,7 +565,7 @@ function resetAdminForm() {
     addSizeStockRow(); 
     document.getElementById('product-id').value = '';
     
-    document.getElementById('form-title-accordion').textContent = 'إضافة منتج جديد';
+    document.getElementById('form-title-accordion').textContent = 'إضافة/تعديل منتج';
 
     document.getElementById('submit-btn').textContent = 'إضافة المنتج';
     document.getElementById('cancel-edit-btn').style.display = 'none';

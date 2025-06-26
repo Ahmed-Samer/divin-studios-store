@@ -49,11 +49,17 @@
             
             <div class="admin-section">
                 <h2>معلومات الحساب</h2>
-                <div id="user-details-content" class="order-details-grid" style="grid-template-columns: 1fr;">
-                    <p><strong>الاسم:</strong> <span id="profile-name">جاري التحميل...</span></p>
-                    <p><strong>البريد الإلكتروني:</strong> <span id="profile-email">جاري التحميل...</span></p>
+                <div id="user-details-content" class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">الاسم:</span>
+                        <span class="info-value" id="profile-name">جاري التحميل...</span>
+                    </div>
+                     <div class="info-item">
+                        <span class="info-label">البريد الإلكتروني:</span>
+                        <span class="info-value" id="profile-email">جاري التحميل...</span>
+                    </div>
                 </div>
-            </div>
+                </div>
             
             <div class="admin-section">
                 <h2>بيانات الشحن المحفوظة</h2>
@@ -84,6 +90,7 @@
                     <button type="submit" class="btn" style="width: 100%;">حفظ بيانات الشحن</button>
                 </form>
             </div>
+
             <div class="admin-section" id="change-password-section">
                 <h2>تغيير كلمة المرور</h2>
                 <form id="change-password-form" class="checkout-form">

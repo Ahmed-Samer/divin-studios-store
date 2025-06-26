@@ -1,5 +1,7 @@
 // --- دوال سلة المشتريات والإشعارات ---
 
+let appliedCoupon = null; // متغير لتخزين الكوبون المطبق
+
 // دالة الإشعارات
 export function showToast(message, isError = false) { 
     const toastContainer = document.getElementById('toast-container'); 
@@ -26,7 +28,7 @@ export function updateCartIcon() {
     });
 }
 
-// دالة لتحديث السلة في الـ localStorage وقاعدة البيانات (إذا كان المستخدم مسجلاً)
+// دالة لتحديث السلة في الـ localStorage وقاعدة البيانات
 async function syncCart(newCart) {
     localStorage.setItem('cart', JSON.stringify(newCart));
     updateCartIcon();
@@ -163,44 +165,124 @@ export function displayCartItems(allProducts) {
     updateCartIcon();
 }
 
-// دالة عرض ملخص الطلب في صفحة الدفع
+// --- بداية الجزء المعدل ---
+
+// دالة عرض ملخص الطلب في صفحة الدفع (مُعدلة بالكامل)
 export function displayCheckoutSummary(allProducts) {
     const summaryContainer = document.getElementById('summary-items-container');
-    const totalElement = document.getElementById('summary-total-price');
     if (!summaryContainer) return;
 
     const cart = JSON.parse(localStorage.getItem('cart')) || [];
     summaryContainer.innerHTML = '';
+    
     if (cart.length === 0) {
         summaryContainer.innerHTML = '<p>لا توجد منتجات في السلة.</p>';
-        totalElement.textContent = '0 ج.م';
         const confirmBtn = document.querySelector('.confirm-order-btn');
-        if(confirmBtn) confirmBtn.disabled = true;
+        if (confirmBtn) confirmBtn.disabled = true;
+        updatePriceSummary(0); // تحديث الأسعار لتكون صفر
         return;
     }
 
-    let totalPrice = 0;
+    let subtotal = 0;
     cart.forEach(cartItem => {
         const product = allProducts.find(p => p.id == cartItem.id);
         if (product) {
-            totalPrice += product.price * cartItem.quantity;
+            subtotal += product.price * cartItem.quantity;
             const summaryItemHTML = `<div class="summary-item"> <span>${product.name} (x${cartItem.quantity}) - مقاس ${cartItem.size}</span> <span>${product.price * cartItem.quantity} ج.م</span> </div>`;
             summaryContainer.innerHTML += summaryItemHTML;
         }
     });
-    totalElement.textContent = `${totalPrice} ج.م`;
+
+    updatePriceSummary(subtotal); // حساب وعرض السعر المبدئي
+
+    const applyCouponBtn = document.getElementById('apply-coupon-btn');
+    if (applyCouponBtn) {
+        applyCouponBtn.addEventListener('click', handleApplyCoupon);
+    }
 }
 
-// --- بداية الجزء الجديد ---
+// دالة جديدة لتحديث عرض الأسعار في الملخص
+function updatePriceSummary(subtotal, discount = { amount: 0, code: null }) {
+    const subtotalEl = document.getElementById('summary-subtotal-price');
+    const discountRow = document.getElementById('summary-discount-row');
+    const discountAmountEl = document.getElementById('summary-discount-amount');
+    const totalEl = document.getElementById('summary-total-price');
+    
+    let finalPrice = subtotal - discount.amount;
+    if (finalPrice < 0) finalPrice = 0;
+
+    subtotalEl.textContent = `${subtotal.toFixed(2)} ج.م`;
+    totalEl.textContent = `${finalPrice.toFixed(2)} ج.م`;
+
+    if (discount.amount > 0) {
+        discountAmountEl.textContent = `-${discount.amount.toFixed(2)} ج.م`;
+        discountRow.style.display = 'flex';
+    } else {
+        discountRow.style.display = 'none';
+    }
+}
+
+// دالة جديدة للتحقق من الكوبون وتطبيقه
+async function handleApplyCoupon() {
+    const couponInput = document.getElementById('coupon-input');
+    const code = couponInput.value.trim();
+    const couponMessageEl = document.getElementById('coupon-message');
+    
+    if (!code) {
+        showToast('يرجى إدخال كود الخصم', true);
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/coupons/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message);
+        }
+        
+        appliedCoupon = data; // حفظ الكوبون السليم
+        couponMessageEl.textContent = `تم تطبيق الخصم بنجاح! (${data.code})`;
+        couponMessageEl.style.color = '#2ecc71';
+        
+        // إعادة حساب السعر بعد تطبيق الكوبون
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        const allProducts = await (await fetch('/api/products/search?keyword=')).json();
+        let subtotal = 0;
+        cart.forEach(item => {
+            const product = allProducts.find(p => p.id == item.id);
+            if(product) subtotal += product.price * item.quantity;
+        });
+
+        let discountAmount = 0;
+        if (appliedCoupon.discountType === 'percentage') {
+            discountAmount = (subtotal * appliedCoupon.value) / 100;
+        } else {
+            discountAmount = appliedCoupon.value;
+        }
+        
+        updatePriceSummary(subtotal, { amount: discountAmount, code: appliedCoupon.code });
+
+    } catch (error) {
+        appliedCoupon = null;
+        couponMessageEl.textContent = error.message;
+        couponMessageEl.style.color = '#e74c3c';
+        // إعادة السعر لوضعه الأصلي لو الكوبون خطأ
+        displayCheckoutSummary(JSON.parse(localStorage.getItem('allProducts')) || []); 
+    }
+}
+
+
 // دالة لملء فورم الشحن تلقائياً
 export function prefillCheckoutForm() {
     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
     
-    // نتأكد إن المستخدم مسجل دخول وعنده بيانات شحن محفوظة
     if (userInfo && userInfo.shippingDetails) {
         const details = userInfo.shippingDetails;
-        
-        // لو الحقول موجودة في بيانات المستخدم، نملى بيها الفورم
         if (details.fullName) document.getElementById('full-name').value = details.fullName;
         if (details.phone) document.getElementById('phone').value = details.phone;
         if (details.address) document.getElementById('address').value = details.address;
@@ -208,7 +290,6 @@ export function prefillCheckoutForm() {
         if (details.city) document.getElementById('city').value = details.city;
     }
 }
-// --- نهاية الجزء الجديد ---
 
 
 // دوال التحقق من الفورم
@@ -217,7 +298,7 @@ function clearFieldError(inputElement) { const formGroup = inputElement.closest(
 function validateForm() { let isValid = true; const fields = ['full-name', 'phone', 'address', 'governorate', 'city']; fields.forEach(id => { const field = document.getElementById(id); if (field) clearFieldError(field); }); const fullName = document.getElementById('full-name'); const phone = document.getElementById('phone'); const address = document.getElementById('address'); const governorate = document.getElementById('governorate'); const city = document.getElementById('city'); if (fullName.value.trim() === '') { showFieldError(fullName, 'هذا الحقل مطلوب.'); isValid = false; } if (phone.value.trim() === '') { showFieldError(phone, 'هذا الحقل مطلوب.'); isValid = false; } else if (!/^\d{11}$/.test(phone.value.trim())) { showFieldError(phone, 'يجب أن يكون رقم الهاتف 11 رقماً صحيحاً.'); isValid = false; } if (address.value.trim() === '') { showFieldError(address, 'هذا الحقل مطلوب.'); isValid = false; } if (governorate.value.trim() === '') { showFieldError(governorate, 'هذا الحقل مطلوب.'); isValid = false; } if (city.value.trim() === '') { showFieldError(city, 'هذا الحقل مطلوب.'); isValid = false; } return isValid; }
 
 
-// دالة إرسال الطلب للسيرفر
+// دالة إرسال الطلب للسيرفر (مُعدلة لإرسال الكوبون)
 export async function handleOrderSubmission(event) {
     event.preventDefault();
     if (!validateForm()) {
@@ -245,6 +326,13 @@ export async function handleOrderSubmission(event) {
         confirmBtn.textContent = 'تأكيد الطلب';
         return;
     }
+    
+    // تجميع كل البيانات لإرسالها
+    const orderData = {
+        customerDetails,
+        cartItems,
+        couponCode: appliedCoupon ? appliedCoupon.code : null
+    };
 
     try {
         const headers = { 'Content-Type': 'application/json' };
@@ -255,14 +343,13 @@ export async function handleOrderSubmission(event) {
         const response = await fetch('/api/orders', {
             method: 'POST',
             headers: headers,
-            body: JSON.stringify({ customerDetails, cartItems }),
+            body: JSON.stringify(orderData),
         });
 
         if (response.ok) {
             syncCart([]);
             showToast('تم تأكيد طلبك بنجاح! سيتم تحويلك للصفحة الرئيسية ✔️');
             confirmBtn.textContent = 'تم الطلب بنجاح!';
-            // تحديث بيانات المستخدم في localStorage بالبيانات الجديدة بعد حفظها في السيرفر
             if (userInfo) {
                 const updatedUserInfo = { ...userInfo, shippingDetails: customerDetails };
                 localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
@@ -278,3 +365,4 @@ export async function handleOrderSubmission(event) {
         confirmBtn.textContent = 'تأكيد الطلب';
     }
 }
+// --- نهاية الجزء المعدل ---

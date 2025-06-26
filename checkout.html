@@ -79,11 +79,33 @@
                 <div class="order-summary">
                     <h2>ملخص الطلب</h2>
                     <div id="summary-items-container" class="summary-items">
+                        </div>
+
+                    <div class="coupon-section">
+                        <div class="form-group">
+                            <label for="coupon-input">كود الخصم (إن وجد)</label>
+                            <div class="coupon-input-group">
+                                <input type="text" id="coupon-input" placeholder="أدخل كود الخصم">
+                                <button type="button" id="apply-coupon-btn" class="btn btn-secondary">تطبيق</button>
+                            </div>
+                            <span id="coupon-message" class="coupon-message"></span>
+                        </div>
                     </div>
-                    <div class="summary-total">
-                        <span>الإجمالي</span>
-                        <span id="summary-total-price">0 ج.م</span>
+                    <div class="summary-details">
+                         <div class="summary-row" id="summary-subtotal-row">
+                            <span>الإجمالي الفرعي</span>
+                            <span id="summary-subtotal-price">0 ج.م</span>
+                        </div>
+                        <div class="summary-row" id="summary-discount-row" style="display: none;">
+                            <span>الخصم</span>
+                            <span id="summary-discount-amount" style="color: #2ecc71;">-0 ج.م</span>
+                        </div>
+                        <div class="summary-total">
+                            <span>الإجمالي النهائي</span>
+                            <span id="summary-total-price">0 ج.م</span>
+                        </div>
                     </div>
+
                     <button type="submit" form="checkout-form" class="confirm-order-btn">تأكيد الطلب</button>
                 </div>
             </div>
