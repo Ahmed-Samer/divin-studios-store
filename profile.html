@@ -54,8 +54,37 @@
                     <p><strong>البريد الإلكتروني:</strong> <span id="profile-email">جاري التحميل...</span></p>
                 </div>
             </div>
-
+            
             <div class="admin-section">
+                <h2>بيانات الشحن المحفوظة</h2>
+                <p style="font-size: 14px; color: #a8b2d1; margin-top: -15px; margin-bottom: 25px;">هذه البيانات ستُستخدم لملء فورم إتمام الشراء تلقائياً لتسهيل عملية الطلب.</p>
+                <form class="checkout-form" id="shipping-details-form">
+                    <div class="form-group">
+                        <label for="shipping-full-name">الاسم بالكامل</label>
+                        <input type="text" id="shipping-full-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="shipping-phone">رقم الهاتف</label>
+                        <input type="tel" id="shipping-phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="shipping-address">العنوان بالتفصيل</label>
+                        <textarea id="shipping-address" rows="3" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="shipping-governorate">المحافظة</label>
+                            <input type="text" id="shipping-governorate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="shipping-city">المدينة</label>
+                            <input type="text" id="shipping-city" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn" style="width: 100%;">حفظ بيانات الشحن</button>
+                </form>
+            </div>
+            <div class="admin-section" id="change-password-section">
                 <h2>تغيير كلمة المرور</h2>
                 <form id="change-password-form" class="checkout-form">
                     <div class="form-group">
@@ -82,6 +111,11 @@
                     <button type="submit" class="btn" style="width: 100%;">تحديث كلمة المرور</button>
                 </form>
             </div>
+
+            <div class="admin-section" id="google-user-message" style="display: none; text-align: center; background-color: #1c2e4a; padding: 20px; border-radius: 8px;">
+                <p style="font-size: 16px; line-height: 1.7;">أنت مسجل حاليًا بواسطة حساب جوجل، لا توجد كلمة مرور مرتبطة بحسابك على متجرنا لتغييرها.</p>
+            </div>
+
 
             <div class="admin-section">
                 <h2>طلباتي السابقة</h2>

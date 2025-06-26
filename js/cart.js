@@ -1,7 +1,6 @@
 // --- دوال سلة المشتريات والإشعارات ---
 
-// --- بداية الجزء المعدل ---
-// دالة الإشعارات (معدلة لتقبل HTML)
+// دالة الإشعارات
 export function showToast(message, isError = false) { 
     const toastContainer = document.getElementById('toast-container'); 
     if (!toastContainer) return; 
@@ -11,12 +10,10 @@ export function showToast(message, isError = false) {
         toast.style.backgroundColor = '#e74c3c';
         toast.style.color = '#ffffff';
     }
-    toast.innerHTML = message; // تم تغييرها من textContent إلى innerHTML
+    toast.innerHTML = message; 
     toastContainer.appendChild(toast); 
     setTimeout(() => { toast.remove(); }, 4000); 
 }
-// --- نهاية الجزء المعدل ---
-
 
 // دالة تحديث أيقونة السلة
 export function updateCartIcon() {
@@ -31,11 +28,9 @@ export function updateCartIcon() {
 
 // دالة لتحديث السلة في الـ localStorage وقاعدة البيانات (إذا كان المستخدم مسجلاً)
 async function syncCart(newCart) {
-    // تحديث الـ localStorage دائمًا
     localStorage.setItem('cart', JSON.stringify(newCart));
     updateCartIcon();
 
-    // إذا كان المستخدم مسجلاً، قم بمزامنة السلة مع قاعدة البيانات
     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
     if (userInfo && userInfo.token) {
         try {
@@ -55,7 +50,7 @@ async function syncCart(newCart) {
 }
 
 
-// دالة إضافة منتج للسلة (معدلة برسالة خطأ أدق)
+// دالة إضافة منتج للسلة
 export function addToCart(productId, quantity, size, allProducts) {
     if (!size) {
         showToast('من فضلك اختر المقاس أولاً.', true);
@@ -110,7 +105,7 @@ function removeFromCart(cartItemId, allProducts) {
 }
 
 
-// دالة تغيير كمية منتج في السلة (معدلة لمنع الكمية من أن تقل عن 1)
+// دالة تغيير كمية منتج في السلة
 function changeCartItemQuantity(cartItemId, change, allProducts) {
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
     const itemIndex = cart.findIndex(item => (item.id + '-' + item.size) === cartItemId);
@@ -118,7 +113,6 @@ function changeCartItemQuantity(cartItemId, change, allProducts) {
     if (itemIndex > -1) {
         const itemInCart = cart[itemIndex];
 
-        // لو المستخدم بيحاول ينقص الكمية وهي أصلاً 1، منعملش أي حاجة ونخرج
         if (change < 0 && itemInCart.quantity <= 1) {
             return;
         }
@@ -131,7 +125,6 @@ function changeCartItemQuantity(cartItemId, change, allProducts) {
             return;
         }
 
-        // تحديث الكمية
         itemInCart.quantity += change;
     }
 
@@ -198,6 +191,26 @@ export function displayCheckoutSummary(allProducts) {
     totalElement.textContent = `${totalPrice} ج.م`;
 }
 
+// --- بداية الجزء الجديد ---
+// دالة لملء فورم الشحن تلقائياً
+export function prefillCheckoutForm() {
+    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+    
+    // نتأكد إن المستخدم مسجل دخول وعنده بيانات شحن محفوظة
+    if (userInfo && userInfo.shippingDetails) {
+        const details = userInfo.shippingDetails;
+        
+        // لو الحقول موجودة في بيانات المستخدم، نملى بيها الفورم
+        if (details.fullName) document.getElementById('full-name').value = details.fullName;
+        if (details.phone) document.getElementById('phone').value = details.phone;
+        if (details.address) document.getElementById('address').value = details.address;
+        if (details.governorate) document.getElementById('governorate').value = details.governorate;
+        if (details.city) document.getElementById('city').value = details.city;
+    }
+}
+// --- نهاية الجزء الجديد ---
+
+
 // دوال التحقق من الفورم
 function showFieldError(inputElement, message) { const formGroup = inputElement.closest('.form-group'); if (!formGroup) return; const errorElement = formGroup.querySelector('.error-message'); if (inputElement) inputElement.classList.add('invalid'); if (errorElement) { errorElement.textContent = message; errorElement.style.display = 'block'; } }
 function clearFieldError(inputElement) { const formGroup = inputElement.closest('.form-group'); if (!formGroup) return; const errorElement = formGroup.querySelector('.error-message'); if (inputElement) inputElement.classList.remove('invalid'); if(errorElement) errorElement.style.display = 'none'; }
@@ -246,10 +259,14 @@ export async function handleOrderSubmission(event) {
         });
 
         if (response.ok) {
-            // مسح السلة بعد إتمام الطلب بنجاح
             syncCart([]);
             showToast('تم تأكيد طلبك بنجاح! سيتم تحويلك للصفحة الرئيسية ✔️');
             confirmBtn.textContent = 'تم الطلب بنجاح!';
+            // تحديث بيانات المستخدم في localStorage بالبيانات الجديدة بعد حفظها في السيرفر
+            if (userInfo) {
+                const updatedUserInfo = { ...userInfo, shippingDetails: customerDetails };
+                localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
+            }
             setTimeout(() => { window.location.href = 'index.html'; }, 3000);
         } else {
             const errorData = await response.json();

@@ -1,12 +1,12 @@
 // استدعاء كل الدوال اللازمة من باقي الملفات
 import { initializeAdminPage } from './admin.js';
 import { handleLoginForm, handleRegisterForm, updateUserNav, initializeRegisterPageListeners, handleForgotPasswordForm, handleResetPasswordForm, setupPasswordToggle } from './auth.js';
-import { showToast, updateCartIcon, addToCart, displayCartItems, displayCheckoutSummary, handleOrderSubmission } from './cart.js';
+import { showToast, updateCartIcon, addToCart, displayCartItems, displayCheckoutSummary, handleOrderSubmission, prefillCheckoutForm } from './cart.js'; // <-- إضافة prefillCheckoutForm
 import { initializeProfilePage } from './profile.js';
 
 // متغيرات عامة
 let allProducts = [];
-let wishlist = []; // متغير جديد لتخزين قائمة المفضلة
+let wishlist = []; 
 const userInfo = JSON.parse(localStorage.getItem('userInfo'));
 
 function showSpinner(containerElement) {
@@ -55,7 +55,6 @@ function setupCommonEventListeners() {
         if (header.classList.contains('search-active')) {
             header.classList.remove('search-active');
         }
-        // إخفاء قائمة المستخدم عند الضغط في أي مكان آخر
         const userActions = document.querySelector('.user-actions.open');
         if (userActions && !userActions.contains(e.target)) {
             userActions.classList.remove('open');
@@ -68,7 +67,6 @@ function setupCommonEventListeners() {
         }
     });
 
-    // Event delegation for wishlist icons
     document.addEventListener('click', function(event) {
         if (event.target.matches('.wishlist-icon')) {
             handleWishlistToggle(event.target);
@@ -90,7 +88,6 @@ async function initializeApp() {
             return res.json();
         });
 
-        // جلب السلة والمفضلة معًا إذا كان المستخدم مسجلاً
         if (userInfo && userInfo.token) {
             const cartPromise = fetch('/api/users/cart', {
                 headers: { 'Authorization': `Bearer ${userInfo.token}` }
@@ -102,7 +99,7 @@ async function initializeApp() {
 
             const [products, userCart, userWishlist] = await Promise.all([productsPromise, cartPromise, wishlistPromise]);
             allProducts = products;
-            wishlist = userWishlist.map(p => p.id); // خزن أرقام المنتجات فقط
+            wishlist = userWishlist.map(p => p.id);
             
             localStorage.setItem('cart', JSON.stringify(userCart || []));
             localStorage.setItem('userInfo', JSON.stringify({...userInfo, wishlist: wishlist}));
@@ -123,6 +120,7 @@ async function initializeApp() {
 }
 
 
+// --- بداية الجزء المعدل ---
 // دالة تعمل كـ "راوتر" لتشغيل الكود المناسب لكل صفحة
 function runPageSpecificLogic() {
     updateUserNav();
@@ -143,6 +141,7 @@ function runPageSpecificLogic() {
     }
     if (document.querySelector('.checkout-page-container')) {
         displayCheckoutSummary(allProducts);
+        prefillCheckoutForm(); // <-- استدعاء الدالة الجديدة هنا
         const checkoutForm = document.getElementById('checkout-form');
         if (checkoutForm) {
             checkoutForm.addEventListener('submit', handleOrderSubmission);
@@ -173,42 +172,52 @@ function runPageSpecificLogic() {
     if (document.getElementById('favorites-grid')) {
         initializeFavoritesPage();
     }
+    
+    const googleLoginBtn = document.getElementById('google-login-btn');
+    if (googleLoginBtn) {
+        googleLoginBtn.addEventListener('click', () => {
+            window.location.href = '/api/users/auth/google';
+        });
+    }
 
     const passwordContainers = document.querySelectorAll('.password-container');
     passwordContainers.forEach(container => {
         setupPasswordToggle(container);
     });
 }
+// --- نهاية الجزء المعدل ---
 
 
 function initializeContactForm() {
     const contactForm = document.getElementById('contact-form');
-    const submitBtn = document.getElementById('contact-submit-btn');
     if (!contactForm) return;
 
+    const submitBtn = document.getElementById('contact-submit-btn');
     const publicKey = 'LZePcExeLCFN4FrpM';
     const serviceID = 'service_b4ht9cf';
     const templateID = 'template_zwqd2g8';
 
-    emailjs.init({ publicKey: publicKey });
-
     contactForm.addEventListener('submit', function(event) {
         event.preventDefault();
         
+        // نحفظ النص الأصلي للزر هنا
+        const originalBtnText = submitBtn.textContent;
         submitBtn.textContent = 'جاري الإرسال...';
         submitBtn.disabled = true;
 
-        emailjs.sendForm(serviceID, templateID, this)
+        // نمرر المفتاح العام هنا ونلغي دالة init
+        emailjs.sendForm(serviceID, templateID, this, publicKey)
             .then(() => {
-                submitBtn.textContent = 'إرسال الرسالة';
-                submitBtn.disabled = false;
                 showToast('تم إرسال رسالتك بنجاح! شكراً لك.');
                 contactForm.reset();
             }, (err) => {
-                submitBtn.textContent = 'إرسال الرسالة';
-                submitBtn.disabled = false;
                 showToast('حدث خطأ أثناء إرسال الرسالة. حاول مرة أخرى.', true);
                 console.error('EmailJS error:', JSON.stringify(err));
+            })
+            .finally(() => {
+                // هذا الكود سيعمل دائماً (في حالة النجاح أو الفشل)
+                submitBtn.textContent = originalBtnText; // نعيد النص الأصلي المحفوظ
+                submitBtn.disabled = false;
             });
     });
 }
@@ -257,7 +266,6 @@ function renderProducts(productsToRender, containerSelector = '.product-grid') {
     });
 }
 
-// --- بداية الجزء المعدل ---
 async function handleWishlistToggle(iconElement) {
     if (!userInfo) {
         showToast('يجب تسجيل الدخول أولاً لإضافة منتجات للمفضلة.', true);
@@ -288,13 +296,11 @@ async function handleWishlistToggle(iconElement) {
 
             iconElement.classList.toggle('active');
             
-            // لو بنضيف للمفضلة، نظهر الرسالة الجديدة
             if (!isFavorited) {
                 const messageWithLink = `تم إضافة المنتج للمفضلة &nbsp; <a href='favorites.html' style='color: #0a192f; text-decoration: underline; font-weight: bold;'>عرض المفضلة</a>`;
                 showToast(messageWithLink);
             } else {
                 showToast('تم حذف المنتج من المفضلة');
-                // لو كنا في صفحة المفضلة، نحذف الكارت من الواجهة فوراً
                 if (window.location.pathname.endsWith('favorites.html')) {
                     iconElement.closest('.product-card').remove();
                     if (document.querySelectorAll('#favorites-grid .product-card').length === 0) {
@@ -309,7 +315,6 @@ async function handleWishlistToggle(iconElement) {
         showToast(error.message, true);
     }
 }
-// --- نهاية الجزء المعدل ---
 
 
 function initializeHomePage(urlParams) {

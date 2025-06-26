@@ -1,16 +1,29 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const path =require('path');
+const path = require('path');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const session = require('express-session');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'a_default_secret_for_development',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: process.env.NODE_ENV === 'production' }
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 
 mongoose.connect(process.env.MONGO_URI)
@@ -26,7 +39,11 @@ mongoose.connect(process.env.MONGO_URI)
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    password: {
+        type: String,
+        required: function() { return !this.googleId; }
+    },
+    googleId: { type: String },
     isAdmin: { type: Boolean, required: true, default: false },
     cart: [
         {
@@ -35,28 +52,80 @@ const userSchema = new mongoose.Schema({
             size: { type: String, required: true }
         }
     ],
-    // --- بداية الحقل الجديد ---
     wishlist: [{
         type: Number
     }],
-    // --- نهاية الحقل الجديد ---
+    shippingDetails: {
+        fullName: { type: String },
+        phone: { type: String },
+        address: { type: String },
+        governorate: { type: String },
+        city: { type: String }
+    },
     passwordResetToken: String,
     passwordResetExpires: Date,
 }, {
     timestamps: true
 });
 userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) {
-        next();
+    if (!this.isModified('password') || !this.password) {
+        return next();
     }
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
 });
 userSchema.methods.matchPassword = async function (enteredPassword) {
+    if (!this.password) return false;
     return await bcrypt.compare(enteredPassword, this.password);
 };
 const User = mongoose.models.User || mongoose.model('User', userSchema);
 
+
+// --- إعداد استراتيجية جوجل لـ Passport ---
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: "/api/users/auth/google/callback"
+},
+async (accessToken, refreshToken, profile, done) => {
+    try {
+        let user = await User.findOne({ googleId: profile.id });
+
+        if (user) {
+            return done(null, user);
+        } else {
+            user = await User.findOne({ email: profile.emails[0].value });
+
+            if (user) {
+                user.googleId = profile.id;
+                await user.save();
+                return done(null, user);
+            } else {
+                const newUser = await User.create({
+                    googleId: profile.id,
+                    name: profile.displayName,
+                    email: profile.emails[0].value,
+                });
+                return done(null, newUser);
+            }
+        }
+    } catch (error) {
+        return done(error, false);
+    }
+}));
+
+passport.serializeUser((user, done) => {
+    done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+    try {
+        const user = await User.findById(id);
+        done(null, user);
+    } catch (error) {
+        done(error, false);
+    }
+});
 
 // --- Product Schema and Model ---
 const productSchema = new mongoose.Schema({
@@ -119,8 +188,14 @@ const protect = async (req, res, next) => {
             req.user = await User.findById(decoded.id).select('-password');
             next();
         } catch (error) {
+            if (req.isAuthenticated()) {
+                return next();
+            }
             res.status(401).json({ message: 'غير مصرح لك بالدخول، التوكن غير صالح' });
         }
+    } else if (req.isAuthenticated()) { 
+        req.user = await User.findById(req.session.passport.user).select('-password');
+        return next();
     } else {
         res.status(401).json({ message: 'غير مصرح لك بالدخول، لا يوجد توكن' });
     }
@@ -136,8 +211,57 @@ const admin = (req, res, next) => {
 
 // --- Users API ---
 const generateToken = (id) => { return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' }); };
-app.post('/api/users/register', async (req, res) => { const { name, email, password } = req.body; try { const userExists = await User.findOne({ email }); if (userExists) { return res.status(400).json({ message: 'هذا البريد الإلكتروني مسجل بالفعل' }); } const user = await User.create({ name, email, password }); if (user) { res.status(201).json({ _id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin, token: generateToken(user._id), cart: user.cart, wishlist: user.wishlist }); } else { res.status(400).json({ message: 'بيانات المستخدم غير صالحة' }); } } catch (error) { res.status(500).json({ message: 'حدث خطأ في السيرفر' }); } });
-app.post('/api/users/login', async (req, res) => { const { email, password } = req.body; try { const user = await User.findOne({ email }); if (user && (await user.matchPassword(password))) { res.json({ _id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin, token: generateToken(user._id), cart: user.cart, wishlist: user.wishlist }); } else { res.status(401).json({ message: 'البريد الإلكتروني أو كلمة السر غير صحيحة' }); } } catch (error) { res.status(500).json({ message: 'حدث خطأ في السيرفر' }); } });
+
+// --- مسارات جوجل ---
+app.get('/api/users/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+app.get('/api/users/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/login' }),
+    (req, res) => {
+        const token = generateToken(req.user._id);
+        const userInfo = JSON.stringify({
+            _id: req.user._id,
+            name: req.user.name,
+            email: req.user.email,
+            isAdmin: req.user.isAdmin,
+            token: token,
+            cart: req.user.cart,
+            wishlist: req.user.wishlist,
+            hasPassword: !!req.user.password,
+            shippingDetails: req.user.shippingDetails
+        });
+        res.redirect(`/auth_success.html?userInfo=${encodeURIComponent(userInfo)}`);
+    }
+);
+
+app.post('/api/users/register', async (req, res) => { const { name, email, password } = req.body; try { const userExists = await User.findOne({ email }); if (userExists) { return res.status(400).json({ message: 'هذا البريد الإلكتروني مسجل بالفعل' }); } const user = await User.create({ name, email, password }); if (user) { res.status(201).json({ _id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin, token: generateToken(user._id), cart: user.cart, wishlist: user.wishlist, hasPassword: !!user.password, shippingDetails: user.shippingDetails }); } else { res.status(400).json({ message: 'بيانات المستخدم غير صالحة' }); } } catch (error) { res.status(500).json({ message: 'حدث خطأ في السيرفر' }); } });
+
+app.post('/api/users/login', async (req, res) => { 
+    const { email, password } = req.body; 
+    try { 
+        const user = await User.findOne({ email }); 
+        if (user && (await user.matchPassword(password))) { 
+            res.json({ 
+                _id: user._id, 
+                name: user.name, 
+                email: user.email, 
+                isAdmin: user.isAdmin, 
+                token: generateToken(user._id), 
+                cart: user.cart, 
+                wishlist: user.wishlist,
+                hasPassword: !!user.password,
+                shippingDetails: user.shippingDetails
+            }); 
+        } else { 
+            res.status(401).json({ message: 'البريد الإلكتروني أو كلمة السر غير صحيحة' }); 
+        } 
+    } catch (error) { 
+        res.status(500).json({ message: 'حدث خطأ في السيرفر' }); 
+    } 
+});
+
 app.post('/api/users/check-email', async (req, res) => {
     try {
         const { email } = req.body;
@@ -153,8 +277,8 @@ app.post('/api/users/check-email', async (req, res) => {
 app.post('/api/users/forgot-password', async (req, res) => {
     try {
         const user = await User.findOne({ email: req.body.email });
-        if (!user) {
-            return res.status(200).json({ message: 'إذا كان بريدك الإلكتروني مسجلاً لدينا، فستتلقى رابطًا لإعادة تعيين كلمة المرور.' });
+        if (!user || !user.password) {
+            return res.status(200).json({ message: 'إذا كان بريدك الإلكتروني مسجلاً لدينا بكلمة مرور، فستتلقى رابطًا لإعادة التعيين.' });
         }
         const resetToken = crypto.randomBytes(20).toString('hex');
         user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
@@ -251,7 +375,6 @@ app.put('/api/users/profile/password', protect, async (req, res) => {
     }
 });
 
-// --- بداية endpoints المفضلة ---
 app.get('/api/users/wishlist', protect, async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
@@ -267,7 +390,7 @@ app.post('/api/users/wishlist/add', protect, async (req, res) => {
         const { productId } = req.body;
         const user = await User.findByIdAndUpdate(
             req.user._id,
-            { $addToSet: { wishlist: productId } }, // addToSet تمنع التكرار
+            { $addToSet: { wishlist: productId } },
             { new: true }
         );
         res.status(200).json(user.wishlist);
@@ -289,8 +412,27 @@ app.post('/api/users/wishlist/remove', protect, async (req, res) => {
         res.status(500).json({ message: "فشل في حذف المنتج من المفضلة" });
     }
 });
-// --- نهاية endpoints المفضلة ---
 
+// --- بداية الـ Endpoint الجديد لحفظ بيانات الشحن ---
+app.put('/api/users/profile/shipping', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (user) {
+            user.shippingDetails = req.body;
+            const updatedUser = await user.save();
+            res.json({
+                message: 'تم حفظ بيانات الشحن بنجاح.',
+                shippingDetails: updatedUser.shippingDetails
+            });
+        } else {
+            res.status(404).json({ message: 'المستخدم غير موجود' });
+        }
+    } catch (error) {
+        console.error('Error updating shipping details:', error);
+        res.status(500).json({ message: 'فشل في تحديث بيانات الشحن' });
+    }
+});
+// --- نهاية الـ Endpoint الجديد ---
 
 // --- Products API ---
 app.get('/api/products/search', async (req, res) => { try { const keyword = req.query.keyword ? { name: { $regex: req.query.keyword, $options: 'i' } } : {}; const products = await Product.find({ ...keyword, isDeleted: { $ne: true } }); res.json(products); } catch (error) { res.status(500).json({ message: 'فشل في البحث عن المنتجات' }); } });
@@ -322,11 +464,13 @@ app.post('/api/orders', async (req, res) => {
     try {
         const { customerDetails, cartItems } = req.body;
         let user = null;
+        let token = null;
+
         if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-            const token = req.headers.authorization.split(' ')[1];
+            token = req.headers.authorization.split(' ')[1];
             try {
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                user = await User.findById(decoded.id);
+                user = await User.findById(decoded.id).session(session);
             } catch (e) {
                 console.log("توكن غير صالح أو منتهي الصلاحية، سيتم التعامل مع الطلب كزائر.");
             }
@@ -371,6 +515,8 @@ app.post('/api/orders', async (req, res) => {
 
         if (user) {
             user.cart = [];
+            // --- تم إلغاء السطر التالي ---
+            // user.shippingDetails = customerDetails; 
             await user.save({ session });
         }
 
@@ -445,7 +591,12 @@ app.put('/api/orders/:id/status', protect, admin, async (req, res) => {
 // --- الجزء الخاص بالملفات الثابتة والمسارات النهائية ---
 app.use(express.static(path.join(__dirname)));
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    const fileExtensions = ['.css', '.js', '.jpg', '.png', '.gif', '.jpeg', '.svg', '.webp'];
+    if (fileExtensions.some(ext => req.path.endsWith(ext))) {
+        res.status(404).send('Not found');
+    } else {
+        res.sendFile(path.join(__dirname, 'index.html'));
+    }
 });
 
 module.exports = app;

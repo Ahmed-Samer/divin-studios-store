@@ -6,7 +6,73 @@ function showSpinner(containerElement) {
     }
 }
 
-// --- بداية الجزء الجديد: دالة التعامل مع تغيير كلمة المرور ---
+// --- بداية الدوال الجديدة الخاصة ببيانات الشحن ---
+
+// دالة لملء فورم الشحن بالبيانات المحفوظة
+function populateShippingForm(userInfo) {
+    if (userInfo && userInfo.shippingDetails) {
+        const details = userInfo.shippingDetails;
+        document.getElementById('shipping-full-name').value = details.fullName || '';
+        document.getElementById('shipping-phone').value = details.phone || '';
+        document.getElementById('shipping-address').value = details.address || '';
+        document.getElementById('shipping-governorate').value = details.governorate || '';
+        document.getElementById('shipping-city').value = details.city || '';
+    }
+}
+
+// دالة لحفظ بيانات الشحن الجديدة
+async function handleSaveShippingDetails(event, token) {
+    event.preventDefault();
+    const submitBtn = event.target.querySelector('button');
+
+    const shippingDetails = {
+        fullName: document.getElementById('shipping-full-name').value,
+        phone: document.getElementById('shipping-phone').value,
+        address: document.getElementById('shipping-address').value,
+        governorate: document.getElementById('shipping-governorate').value,
+        city: document.getElementById('shipping-city').value,
+    };
+
+    // تحقق بسيط من أن الحقول ليست فارغة
+    if (!shippingDetails.fullName || !shippingDetails.phone || !shippingDetails.address || !shippingDetails.governorate || !shippingDetails.city) {
+        showToast('يرجى ملء جميع حقول بيانات الشحن.', true);
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'جاري الحفظ...';
+
+    try {
+        const response = await fetch('/api/users/profile/shipping', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(shippingDetails)
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            showToast(data.message);
+            // تحديث بيانات المستخدم في localStorage بالبيانات الجديدة
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const updatedUserInfo = { ...userInfo, shippingDetails: data.shippingDetails };
+            localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        showToast(error.message || 'حدث خطأ ما.', true);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'حفظ بيانات الشحن';
+    }
+}
+
+// --- نهاية الدوال الجديدة ---
+
+
 async function handleChangePassword(event, token) {
     event.preventDefault();
     const currentPassword = document.getElementById('current-password').value;
@@ -14,7 +80,6 @@ async function handleChangePassword(event, token) {
     const confirmNewPassword = document.getElementById('confirm-new-password').value;
     const submitBtn = event.target.querySelector('button');
 
-    // التحقق من البيانات في الواجهة الأمامية أولاً
     if (!currentPassword || !newPassword || !confirmNewPassword) {
         showToast('يرجى ملء جميع الحقول.', true);
         return;
@@ -44,7 +109,7 @@ async function handleChangePassword(event, token) {
         const data = await response.json();
         if (response.ok) {
             showToast(data.message, false);
-            event.target.reset(); // مسح حقول النموذج بعد النجاح
+            event.target.reset(); 
         } else {
             throw new Error(data.message);
         }
@@ -55,9 +120,8 @@ async function handleChangePassword(event, token) {
         submitBtn.textContent = 'تحديث كلمة المرور';
     }
 }
-// --- نهاية الجزء الجديد ---
 
-// الدالة الرئيسية اللي بيتم استدعاؤها من main.js
+
 export function initializeProfilePage() {
     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
     if (!userInfo || !userInfo.token) {
@@ -74,15 +138,31 @@ export function initializeProfilePage() {
     
     fetchMyOrders(userInfo.token);
 
-    // --- بداية الجزء الجديد: ربط دالة تغيير كلمة المرور بالنموذج ---
-    const changePasswordForm = document.getElementById('change-password-form');
-    if (changePasswordForm) {
-        changePasswordForm.addEventListener('submit', (event) => handleChangePassword(event, userInfo.token));
+    const changePasswordSection = document.getElementById('change-password-section');
+    const googleUserMessage = document.getElementById('google-user-message');
+
+    if (userInfo.hasPassword) {
+        if(changePasswordSection) changePasswordSection.style.display = 'block';
+        if(googleUserMessage) googleUserMessage.style.display = 'none';
+        
+        const changePasswordForm = document.getElementById('change-password-form');
+        if (changePasswordForm) {
+            changePasswordForm.addEventListener('submit', (event) => handleChangePassword(event, userInfo.token));
+        }
+    } else {
+        if(changePasswordSection) changePasswordSection.style.display = 'none';
+        if(googleUserMessage) googleUserMessage.style.display = 'block';
+    }
+
+    // --- بداية الجزء الجديد: تشغيل فورم بيانات الشحن ---
+    populateShippingForm(userInfo);
+    const shippingForm = document.getElementById('shipping-details-form');
+    if (shippingForm) {
+        shippingForm.addEventListener('submit', (event) => handleSaveShippingDetails(event, userInfo.token));
     }
     // --- نهاية الجزء الجديد ---
 }
 
-// دالة جلب الطلبات من السيرفر
 async function fetchMyOrders(token) {
     const ordersListContainer = document.getElementById('my-orders-list');
     if (!ordersListContainer) return;
@@ -117,7 +197,6 @@ async function fetchMyOrders(token) {
     }
 }
 
-// دالة عرض الطلبات في الصفحة
 function renderOrders(orders, container) {
     container.innerHTML = '';
     if (orders.length === 0) {
