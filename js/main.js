@@ -1,7 +1,7 @@
 // استدعاء كل الدوال اللازمة من باقي الملفات
 import { initializeAdminPage } from './admin.js';
 import { handleLoginForm, handleRegisterForm, updateUserNav, initializeRegisterPageListeners, handleForgotPasswordForm, handleResetPasswordForm, setupPasswordToggle } from './auth.js';
-import { showToast, updateCartIcon, addToCart, displayCartItems, displayCheckoutSummary, handleOrderSubmission, prefillCheckoutForm } from './cart.js'; // <-- إضافة prefillCheckoutForm
+import { showToast, updateCartIcon, addToCart, displayCartItems, displayCheckoutSummary, handleOrderSubmission, prefillCheckoutForm } from './cart.js';
 import { initializeProfilePage } from './profile.js';
 
 // متغيرات عامة
@@ -120,7 +120,6 @@ async function initializeApp() {
 }
 
 
-// --- بداية الجزء المعدل ---
 // دالة تعمل كـ "راوتر" لتشغيل الكود المناسب لكل صفحة
 function runPageSpecificLogic() {
     updateUserNav();
@@ -141,7 +140,7 @@ function runPageSpecificLogic() {
     }
     if (document.querySelector('.checkout-page-container')) {
         displayCheckoutSummary(allProducts);
-        prefillCheckoutForm(); // <-- استدعاء الدالة الجديدة هنا
+        prefillCheckoutForm();
         const checkoutForm = document.getElementById('checkout-form');
         if (checkoutForm) {
             checkoutForm.addEventListener('submit', handleOrderSubmission);
@@ -185,42 +184,56 @@ function runPageSpecificLogic() {
         setupPasswordToggle(container);
     });
 }
-// --- نهاية الجزء المعدل ---
 
 
+// --- بداية الجزء المعدل ---
 function initializeContactForm() {
     const contactForm = document.getElementById('contact-form');
+    const submitBtn = document.getElementById('contact-submit-btn');
     if (!contactForm) return;
 
-    const submitBtn = document.getElementById('contact-submit-btn');
-    const publicKey = 'LZePcExeLCFN4FrpM';
-    const serviceID = 'service_b4ht9cf';
-    const templateID = 'template_zwqd2g8';
-
-    contactForm.addEventListener('submit', function(event) {
+    contactForm.addEventListener('submit', async function(event) {
         event.preventDefault();
         
-        // نحفظ النص الأصلي للزر هنا
-        const originalBtnText = submitBtn.textContent;
         submitBtn.textContent = 'جاري الإرسال...';
         submitBtn.disabled = true;
 
-        // نمرر المفتاح العام هنا ونلغي دالة init
-        emailjs.sendForm(serviceID, templateID, this, publicKey)
-            .then(() => {
-                showToast('تم إرسال رسالتك بنجاح! شكراً لك.');
-                contactForm.reset();
-            }, (err) => {
-                showToast('حدث خطأ أثناء إرسال الرسالة. حاول مرة أخرى.', true);
-                console.error('EmailJS error:', JSON.stringify(err));
-            })
-            .finally(() => {
-                // هذا الكود سيعمل دائماً (في حالة النجاح أو الفشل)
-                submitBtn.textContent = originalBtnText; // نعيد النص الأصلي المحفوظ
-                submitBtn.disabled = false;
+        // تجميع البيانات من الفورم
+        const formData = {
+            from_name: document.getElementById('contact-name').value,
+            from_email: document.getElementById('contact-email').value,
+            message: document.getElementById('contact-message').value,
+        };
+
+        try {
+            // إرسال البيانات للسيرفر بتاعنا
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
             });
+            
+            const result = await response.json();
+
+            if (response.ok) {
+                showToast(result.message);
+                contactForm.reset();
+            } else {
+                throw new Error(result.message);
+            }
+
+        } catch (error) {
+            showToast(error.message || 'حدث خطأ أثناء إرسال الرسالة.', true);
+            console.error('Contact form error:', error);
+        } finally {
+            submitBtn.textContent = 'إرسال الرسالة';
+            submitBtn.disabled = false;
+        }
     });
 }
+// --- نهاية الجزء المعدل ---
 
 function renderProducts(productsToRender, containerSelector = '.product-grid') {
     const productGrid = document.querySelector(containerSelector);

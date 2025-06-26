@@ -10,6 +10,7 @@ const nodemailer = require('nodemailer');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
+const axios = require('axios'); // <-- إضافة جديدة
 
 const app = express();
 app.use(cors());
@@ -287,9 +288,7 @@ app.post('/api/users/forgot-password', async (req, res) => {
         const resetURL = `${req.protocol}://${req.get('host')}/reset-password.html?token=${resetToken}`;
         const message = `لقد طلبت إعادة تعيين كلمة المرور. برجاء الضغط على الرابط التالي (أو نسخه ولصقه في متصفحك) لإعادة تعيين كلمة المرور الخاصة بك. هذا الرابط صالح لمدة 15 دقيقة فقط:\n\n${resetURL}`;
         const transporter = nodemailer.createTransport({
-            host: process.env.EMAIL_HOST,
-            port: process.env.EMAIL_PORT,
-            secure: true,
+            service: 'gmail', // تم التعديل لاستخدام خدمة Gmail مباشرة
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS,
@@ -375,6 +374,25 @@ app.put('/api/users/profile/password', protect, async (req, res) => {
     }
 });
 
+app.put('/api/users/profile/shipping', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (user) {
+            user.shippingDetails = req.body;
+            const updatedUser = await user.save();
+            res.json({
+                message: 'تم حفظ بيانات الشحن بنجاح.',
+                shippingDetails: updatedUser.shippingDetails
+            });
+        } else {
+            res.status(404).json({ message: 'المستخدم غير موجود' });
+        }
+    } catch (error) {
+        console.error('Error updating shipping details:', error);
+        res.status(500).json({ message: 'فشل في تحديث بيانات الشحن' });
+    }
+});
+
 app.get('/api/users/wishlist', protect, async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
@@ -413,26 +431,37 @@ app.post('/api/users/wishlist/remove', protect, async (req, res) => {
     }
 });
 
-// --- بداية الـ Endpoint الجديد لحفظ بيانات الشحن ---
-app.put('/api/users/profile/shipping', protect, async (req, res) => {
-    try {
-        const user = await User.findById(req.user._id);
-        if (user) {
-            user.shippingDetails = req.body;
-            const updatedUser = await user.save();
-            res.json({
-                message: 'تم حفظ بيانات الشحن بنجاح.',
-                shippingDetails: updatedUser.shippingDetails
-            });
-        } else {
-            res.status(404).json({ message: 'المستخدم غير موجود' });
+
+// --- بداية الـ Endpoint الجديد الخاص بـ EmailJS ---
+app.post('/api/contact', async (req, res) => {
+    const { from_name, from_email, message } = req.body;
+
+    const data = {
+        service_id: process.env.EMAILJS_SERVICE_ID,
+        template_id: process.env.EMAILJS_TEMPLATE_ID,
+        user_id: process.env.EMAILJS_PUBLIC_KEY,
+        accessToken: process.env.EMAILJS_PRIVATE_KEY, // المفتاح السري
+        template_params: {
+            from_name,
+            from_email,
+            message
         }
+    };
+
+    try {
+        await axios.post('https://api.emailjs.com/api/v1.0/email/send', data, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        res.status(200).json({ message: 'تم إرسال الرسالة بنجاح!' });
     } catch (error) {
-        console.error('Error updating shipping details:', error);
-        res.status(500).json({ message: 'فشل في تحديث بيانات الشحن' });
+        console.error('EmailJS backend error:', error.response ? error.response.data : error.message);
+        res.status(500).json({ message: 'فشل إرسال الرسالة من السيرفر.' });
     }
 });
 // --- نهاية الـ Endpoint الجديد ---
+
 
 // --- Products API ---
 app.get('/api/products/search', async (req, res) => { try { const keyword = req.query.keyword ? { name: { $regex: req.query.keyword, $options: 'i' } } : {}; const products = await Product.find({ ...keyword, isDeleted: { $ne: true } }); res.json(products); } catch (error) { res.status(500).json({ message: 'فشل في البحث عن المنتجات' }); } });
@@ -515,8 +544,6 @@ app.post('/api/orders', async (req, res) => {
 
         if (user) {
             user.cart = [];
-            // --- تم إلغاء السطر التالي ---
-            // user.shippingDetails = customerDetails; 
             await user.save({ session });
         }
 
