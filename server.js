@@ -14,6 +14,12 @@ const axios = require('axios');
 const Coupon = require('./models/coupon.model.js');
 
 const app = express();
+
+// --- بداية السطر الجديد ---
+// هذا السطر مهم جدًا للبيئات اللي شغالة ورا بروكسي زي Vercel
+app.set('trust proxy', 1);
+// --- نهاية السطر الجديد ---
+
 app.use(cors());
 app.use(express.json());
 
