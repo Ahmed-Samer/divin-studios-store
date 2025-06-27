@@ -193,6 +193,17 @@ body { font-family: Arial, sans-serif; margin: 0; background-color: #0a192f; col
 .product-price { font-size: 18px; color: #64ffda; margin: 0 0 20px; font-weight: bold; }
 .btn { display: inline-block; background-color: #64ffda; color: #0a192f; padding: 10px 25px; border-radius: 50px; text-decoration: none; font-weight: bold; transition: background-color 0.3s ease, border-color 0.3s; border: 2px solid transparent; }
 .btn:hover { background-color: #ffffff; }
+.btn-secondary {
+    background-color: transparent;
+    border: 1px solid #64ffda !important;
+    color: #64ffda;
+    padding: 8px 15px;
+    transition: background-color 0.3s;
+}
+.btn-secondary:hover {
+    background-color: rgba(100, 255, 218, 0.1);
+    color: #64ffda;
+}
 
 /* --- تصميم الفوتر --- */
 footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7); padding: 30px 5%; text-align: center; border-top: 1px solid #3a5b8e; }
@@ -493,6 +504,20 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
         padding: 8px 20px;
         font-size: 12px;
     }
+    .admin-header {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    .size-stock-row input {
+        flex-basis: 0;
+    }
+    .size-stock-row .size-name-input {
+        flex-grow: 3;
+    }
+    .size-stock-row .size-stock-input {
+        flex-grow: 2;
+    }
 }
 
 @media (max-width: 500px) {
@@ -547,6 +572,25 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
 .order-products-table th, .order-products-table td { padding: 12px 10px; text-align: right; border-bottom: 1px solid #3a5b8e; }
 .order-products-table th { color: #64ffda; font-size: 14px; }
 .order-products-table tr:last-child td { border-bottom: none; }
+/* --- بداية الجزء المعدل --- */
+.order-products-table .product-link-in-modal {
+    display: inline-block;
+    padding: 5px 12px;
+    border: 1px solid #64ffda;
+    border-radius: 20px;
+    color: #64ffda;
+    background-color: transparent;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+    transition: all 0.2s ease-in-out;
+}
+.order-products-table .product-link-in-modal:hover {
+    background-color: rgba(100, 255, 218, 0.1);
+    transform: translateY(-1px);
+}
+/* --- نهاية الجزء المعدل --- */
 .status-update-form { display: flex; align-items: center; gap: 15px; padding: 20px; background-color: #0a192f; border-radius: 8px; margin-top: 25px; }
 .status-update-form label { font-weight: bold; font-size: 16px; color: #ccd6f6; }
 .status-update-form select { flex-grow: 1; background-color: #2a4162; border: 1px solid #3a5b8e; color: #ccd6f6; padding: 10px; border-radius: 4px; font-size: 16px; }
@@ -694,7 +738,6 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
     font-size: 16px;
 }
 
-/* --- بداية الجزء الجديد --- */
 .info-grid {
     display: flex;
     flex-direction: column;
@@ -723,4 +766,9 @@ footer.main-footer { background-color: #112240; color: rgba(204, 214, 246, 0.7);
     font-size: 18px;
     font-weight: bold;
 }
-/* --- نهاية الجزء الجديد --- */
+
+.managed-order-item .managed-product-controls .btn {
+    padding: 6px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+}

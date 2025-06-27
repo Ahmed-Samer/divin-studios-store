@@ -15,10 +15,8 @@ const Coupon = require('./models/coupon.model.js');
 
 const app = express();
 
-// --- بداية السطر الجديد ---
 // هذا السطر مهم جدًا للبيئات اللي شغالة ورا بروكسي زي Vercel
 app.set('trust proxy', 1);
-// --- نهاية السطر الجديد ---
 
 app.use(cors());
 app.use(express.json());
@@ -172,9 +170,7 @@ const orderSchema = new mongoose.Schema({
         quantity: { type: Number, required: true },
         size: { type: String, required: true }
     }],
-    // --- بداية الجزء المعدل ---
-    subtotal: { type: Number }, // تم إزالة required: true
-    // --- نهاية الجزء المعدل ---
+    subtotal: { type: Number },
     discount: {
         code: String,
         amount: Number
@@ -726,6 +722,55 @@ app.put('/api/orders/:id/status', protect, admin, async (req, res) => {
         session.endSession();
     }
 });
+
+// --- بداية الجزء الجديد: مسار إلغاء الطلب من قبل المستخدم ---
+app.put('/api/orders/:id/cancel', protect, async (req, res) => {
+    const { id } = req.params;
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const order = await Order.findById(id).session(session);
+
+        if (!order) {
+            throw new Error('الطلب غير موجود.');
+        }
+        // نتأكد إن الطلب ده يخص المستخدم اللي عامل تسجيل دخول
+        if (order.user.toString() !== req.user._id.toString()) {
+            throw new Error('غير مصرح لك بإلغاء هذا الطلب.');
+        }
+
+        // نتأكد إن الطلب لسه قيد المراجعة
+        if (order.status !== 'قيد المراجعة') {
+            throw new Error('لا يمكن إلغاء الطلب بعد تأكيده أو شحنه.');
+        }
+
+        // نرجع الكميات للمخزون
+        const restockPromises = order.products.map(p =>
+            Product.updateOne(
+                { id: p.productId, 'sizes.name': p.size },
+                { $inc: { 'sizes.$.stock': p.quantity } },
+                { session }
+            )
+        );
+        await Promise.all(restockPromises);
+
+        // نغير حالة الطلب لـ "ملغي"
+        order.status = 'ملغي';
+        const updatedOrder = await order.save({ session });
+
+        await session.commitTransaction();
+        res.json(updatedOrder);
+
+    } catch (error) {
+        await session.abortTransaction();
+        console.error("خطأ في إلغاء الطلب:", error);
+        res.status(400).json({ message: error.message || 'فشل في إلغاء الطلب' });
+    } finally {
+        session.endSession();
+    }
+});
+// --- نهاية الجزء الجديد ---
 
 
 // --- الجزء الخاص بالملفات الثابتة والمسارات النهائية ---
