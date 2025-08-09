@@ -65,6 +65,7 @@ h1, h2, h3, h4, h5, h6, .logo,
 }
 
 /* --- تصميم القائمة المنسدلة الموحدة --- */
+/* --- بداية التعديل --- */
 .expanded-links { 
     display: none; 
     flex-direction: column; 
@@ -73,7 +74,7 @@ h1, h2, h3, h4, h5, h6, .logo,
     padding: 8px 0; 
     position: absolute; 
     top: calc(100% + 10px); 
-    right: 0; 
+    left: 0; /* تم التغيير من right إلى left */
     background-color: #ffffff; 
     border: 1px solid #e0e0e0;
     border-radius: 8px; 
@@ -85,6 +86,7 @@ h1, h2, h3, h4, h5, h6, .logo,
     transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s 0.3s; 
     z-index: 1001; 
 }
+/* --- نهاية التعديل --- */
 .main-header.menu-is-open .expanded-links { display: flex; opacity: 1; visibility: visible; transform: translateY(0); transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s; }
 .expanded-links li { width: 100%; }
 .expanded-links a { 
@@ -147,6 +149,7 @@ h1, h2, h3, h4, h5, h6, .logo,
     height: 100%;
     fill: #333333;
     transition: fill 0.3s ease;
+    margin-top:9.1px;
 }
 
 .search-container { display: block; }
@@ -364,8 +367,6 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
 .product-title-large { font-size: 48px; color: #1a1a1a; margin-top: 0; margin-bottom: 15px; border: none; }
 .product-price-large { font-size: 32px; color: #333333; margin-bottom: 25px; }
 .product-description { font-size: 16px; line-height: 1.8; margin-bottom: 30px; }
-
-/* --- بداية التعديل --- */
 .product-actions-container {
     display: flex;
     gap: 15px;
@@ -397,7 +398,6 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
     color: #ffffff; 
     transform: scale(1.05); 
 }
-/* --- نهاية  --- */
 .product-options { display: flex; flex-direction: column; gap: 20px; margin-bottom: 30px; }
 .option-group { margin-bottom: 20px; }
 .option-group label { display: block; margin-bottom: 10px; font-weight: bold; font-size: 18px; }
@@ -416,32 +416,7 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
 .size-btn:hover { background-color: #f1f3f5; border-color: #1a1a1a; }
 .size-btn.active { background-color: #1a1a1a; color: #ffffff; border-color: #1a1a1a; }
 .size-btn.disabled { background-color: #e9ecef; color: #adb5bd; border-color: #dee2e6; cursor: not-allowed; text-decoration: line-through; }
-/* الزرار الأساسي (شراء الآن) */
-#buy-now-btn {
-    flex-grow: 1; /* ياخد مساحة أكبر */
-        cursor: pointer; 
 
-}
-
-/* الزرار الثانوي (أضف للسلة) */
-.add-to-cart-btn { 
-    font-family: 'Cairo', Arial, sans-serif;
-    background-color: #ffffff; /* خلفية بيضاء */
-    color: #1a1a1a; /* خط أسود */
-    border: 2px solid #1a1a1a;
-    padding: 15px 30px; 
-    font-size: 18px; 
-    font-weight: bold; 
-    border-radius: 4px; 
-    cursor: pointer; 
-    transition: background-color 0.3s ease, transform 0.2s ease, color 0.3s ease;
-    flex-grow: 1; /* ياخد مساحة أكبر */
-}
-.add-to-cart-btn:hover { 
-    background-color: #1a1a1a; /* يعكس الألوان عند الماوس */
-    color: #ffffff; 
-    transform: scale(1.05); 
-}
 .quantity-selector { display: flex; align-items: center; gap: 10px; }
 .quantity-selector .quantity-btn { 
     background-color: #e9ecef; 
@@ -540,8 +515,7 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
 .form-row .form-group { flex: 1; }
 .summary-item { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
 .summary-total { display: flex; justify-content: space-between; font-size: 20px; border-top: 1px solid #e0e0e0; padding-top: 15px; margin-top: 15px; }
-.confirm-order-btn { width: 100%; background-color: #1a1a1a; color: #ffffff; border: 2px solid #1a1a1a; padding: 15px; font-size: 18px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease, color 0.3s ease; margin-top: 20px; }
-.confirm-order-btn:hover:not(:disabled) { background-color: #ffffff; color: #1a1a1a; transform: scale(1.02); }
+.confirm-order-btn:hover:not(:disabled) { transform: scale(1.02); }
 .confirm-order-btn:disabled { background-color: #e9ecef; color: #adb5bd; border-color: #e9ecef; cursor: not-allowed; }
 .error-message { color: #e74c3c; font-size: 13px; margin-top: 5px; display: none; }
 .form-group input.invalid, .form-group textarea.invalid { border-color: #e74c3c; }
@@ -688,7 +662,7 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
 
 @media (max-width: 500px) {
     .product-grid { 
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
         gap: 15px;
     }
     .page-content { padding: 20px 3%; }
