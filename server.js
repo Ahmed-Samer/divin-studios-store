@@ -3,33 +3,20 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const nodemailer = require('nodemailer');
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const session = require('express-session');
-const axios = require('axios');
+const jwt = require('jsonwebtoken'); // لاستصدار التصاريح
 const Coupon = require('./models/coupon.model.js');
 
 const app = express();
 
-// هذا السطر مهم جدًا للبيئات اللي شغالة ورا بروكسي زي Vercel
 app.set('trust proxy', 1);
 
 app.use(cors());
 app.use(express.json());
 
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'a_default_secret_for_development',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
-}));
-
-app.use(passport.initialize());
-app.use(passport.session());
+// --- بداية: تعريف متغيرات الأمان ---
+const JWT_SECRET = process.env.JWT_SECRET || 'a-very-strong-secret-key-for-jwt';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+// --- نهاية: تعريف متغيرات الأمان ---
 
 
 mongoose.connect(process.env.MONGO_URI)
@@ -40,98 +27,6 @@ mongoose.connect(process.env.MONGO_URI)
     .catch(err => {
         console.error('فشل الاتصال بقاعدة البيانات:', err);
     });
-
-// --- موديل المستخدم ---
-const userSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: {
-        type: String,
-        required: function() { return !this.googleId; }
-    },
-    googleId: { type: String },
-    isAdmin: { type: Boolean, required: true, default: false },
-    cart: [
-        {
-            id: { type: Number, required: true },
-            quantity: { type: Number, required: true, default: 1 },
-            size: { type: String, required: true }
-        }
-    ],
-    wishlist: [{
-        type: Number
-    }],
-    shippingDetails: {
-        fullName: { type: String },
-        phone: { type: String },
-        address: { type: String },
-        governorate: { type: String },
-        city: { type: String }
-    },
-    passwordResetToken: String,
-    passwordResetExpires: Date,
-}, {
-    timestamps: true
-});
-userSchema.pre('save', async function (next) {
-    if (!this.isModified('password') || !this.password) {
-        return next();
-    }
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-});
-userSchema.methods.matchPassword = async function (enteredPassword) {
-    if (!this.password) return false;
-    return await bcrypt.compare(enteredPassword, this.password);
-};
-const User = mongoose.models.User || mongoose.model('User', userSchema);
-
-
-// --- إعداد استراتيجية جوجل لـ Passport ---
-passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/api/users/auth/google/callback"
-},
-async (accessToken, refreshToken, profile, done) => {
-    try {
-        let user = await User.findOne({ googleId: profile.id });
-
-        if (user) {
-            return done(null, user);
-        } else {
-            user = await User.findOne({ email: profile.emails[0].value });
-
-            if (user) {
-                user.googleId = profile.id;
-                await user.save();
-                return done(null, user);
-            } else {
-                const newUser = await User.create({
-                    googleId: profile.id,
-                    name: profile.displayName,
-                    email: profile.emails[0].value,
-                });
-                return done(null, newUser);
-            }
-        }
-    } catch (error) {
-        return done(error, false);
-    }
-}));
-
-passport.serializeUser((user, done) => {
-    done(null, user.id);
-});
-
-passport.deserializeUser(async (id, done) => {
-    try {
-        const user = await User.findById(id);
-        done(null, user);
-    } catch (error) {
-        done(error, false);
-    }
-});
 
 // --- Product Schema and Model ---
 const productSchema = new mongoose.Schema({
@@ -150,12 +45,8 @@ const productSchema = new mongoose.Schema({
 const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
 
 
-// --- Order Schema and Model (مُعدل) ---
+// --- Order Schema and Model ---
 const orderSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
     customerDetails: {
         fullName: { type: String, required: true },
         phone: { type: String, required: true },
@@ -189,261 +80,52 @@ const initialProducts = [
 ];
 async function seedInitialProducts() { try { const productCount = await Product.countDocuments(); if (productCount === 0) { console.log('قاعدة البيانات فارغة، سيتم إضافة المنتجات بالهيكل الجديد...'); await Product.insertMany(initialProducts); console.log('تمت إضافة المنتجات الأولية بنجاح!'); } } catch (error) { console.error('خطأ أثناء إضافة المنتجات الأولية:', error); } }
 
-// --- وظائف الحماية (Middleware) ---
-const protect = async (req, res, next) => {
+
+// --- Middleware لحماية مسارات الأدمن ---
+const protectAdmin = (req, res, next) => {
     let token;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             token = req.headers.authorization.split(' ')[1];
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = await User.findById(decoded.id).select('-password');
-            next();
+            const decoded = jwt.verify(token, JWT_SECRET);
+            
+            if (decoded.isAdmin) {
+                next();
+            } else {
+                res.status(403).json({ message: 'غير مصرح لك بالقيام بهذا الإجراء' });
+            }
         } catch (error) {
-            if (req.isAuthenticated()) {
-                return next();
-            }
-            res.status(401).json({ message: 'غير مصرح لك بالدخول، التوكن غير صالح' });
+            res.status(401).json({ message: 'تصريح غير صالح أو منتهي الصلاحية' });
         }
-    } else if (req.isAuthenticated()) { 
-        req.user = await User.findById(req.session.passport.user).select('-password');
-        return next();
-    } else {
-        res.status(401).json({ message: 'غير مصرح لك بالدخول، لا يوجد توكن' });
+    }
+    if (!token) {
+        res.status(401).json({ message: 'غير مصرح بالدخول، لا يوجد تصريح' });
     }
 };
 
-const admin = (req, res, next) => {
-    if (req.user && req.user.isAdmin) {
-        next();
+
+// --- Admin Login API ---
+app.post('/api/admin/login', (req, res) => {
+    const { password } = req.body;
+
+    if (!ADMIN_PASSWORD) {
+        return res.status(500).json({ message: 'لم يتم تعيين كلمة سر الأدمن على السيرفر.' });
+    }
+
+    if (password === ADMIN_PASSWORD) {
+        const token = jwt.sign({ isAdmin: true }, JWT_SECRET, { expiresIn: '1d' });
+        res.json({
+            message: 'تم تسجيل الدخول بنجاح',
+            token: token
+        });
     } else {
-        res.status(401).json({ message: 'غير مصرح لك، هذه الوظيفة للمسؤولين فقط' });
-    }
-};
-
-// --- Users API ---
-const generateToken = (id) => { return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' }); };
-
-// --- مسارات جوجل ---
-app.get('/api/users/auth/google',
-    passport.authenticate('google', { scope: ['profile', 'email'] })
-);
-
-app.get('/api/users/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/login' }),
-    (req, res) => {
-        const token = generateToken(req.user._id);
-        const userInfo = JSON.stringify({
-            _id: req.user._id,
-            name: req.user.name,
-            email: req.user.email,
-            isAdmin: req.user.isAdmin,
-            token: token,
-            cart: req.user.cart,
-            wishlist: req.user.wishlist,
-            hasPassword: !!req.user.password,
-            shippingDetails: req.user.shippingDetails
-        });
-        res.redirect(`/auth_success.html?userInfo=${encodeURIComponent(userInfo)}`);
-    }
-);
-
-app.post('/api/users/register', async (req, res) => { const { name, email, password } = req.body; try { const userExists = await User.findOne({ email }); if (userExists) { return res.status(400).json({ message: 'هذا البريد الإلكتروني مسجل بالفعل' }); } const user = await User.create({ name, email, password }); if (user) { res.status(201).json({ _id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin, token: generateToken(user._id), cart: user.cart, wishlist: user.wishlist, hasPassword: !!user.password, shippingDetails: user.shippingDetails }); } else { res.status(400).json({ message: 'بيانات المستخدم غير صالحة' }); } } catch (error) { res.status(500).json({ message: 'حدث خطأ في السيرفر' }); } });
-
-app.post('/api/users/login', async (req, res) => { 
-    const { email, password } = req.body; 
-    try { 
-        const user = await User.findOne({ email }); 
-        if (user && (await user.matchPassword(password))) { 
-            res.json({ 
-                _id: user._id, 
-                name: user.name, 
-                email: user.email, 
-                isAdmin: user.isAdmin, 
-                token: generateToken(user._id), 
-                cart: user.cart, 
-                wishlist: user.wishlist,
-                hasPassword: !!user.password,
-                shippingDetails: user.shippingDetails
-            }); 
-        } else { 
-            res.status(401).json({ message: 'البريد الإلكتروني أو كلمة السر غير صحيحة' }); 
-        } 
-    } catch (error) { 
-        res.status(500).json({ message: 'حدث خطأ في السيرفر' }); 
-    } 
-});
-
-app.post('/api/users/check-email', async (req, res) => {
-    try {
-        const { email } = req.body;
-        if (!email) {
-            return res.status(400).json({ message: 'البريد الإلكتروني مطلوب' });
-        }
-        const userExists = await User.findOne({ email: email.toLowerCase() });
-        res.status(200).json({ exists: !!userExists });
-    } catch (error) {
-        res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء التحقق' });
-    }
-});
-app.post('/api/users/forgot-password', async (req, res) => {
-    try {
-        const user = await User.findOne({ email: req.body.email });
-        if (!user || !user.password) {
-            return res.status(200).json({ message: 'إذا كان بريدك الإلكتروني مسجلاً لدينا بكلمة مرور، فستتلقى رابطًا لإعادة التعيين.' });
-        }
-        const resetToken = crypto.randomBytes(20).toString('hex');
-        user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-        user.passwordResetExpires = Date.now() + 15 * 60 * 1000;
-        await user.save();
-        const resetURL = `${req.protocol}://${req.get('host')}/reset-password.html?token=${resetToken}`;
-        const message = `لقد طلبت إعادة تعيين كلمة المرور. برجاء الضغط على الرابط التالي (أو نسخه ولصقه في متصفحك) لإعادة تعيين كلمة المرور الخاصة بك. هذا الرابط صالح لمدة 15 دقيقة فقط:\n\n${resetURL}`;
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-            },
-        });
-        await transporter.sendMail({
-            from: `"Zantiva Store" <${process.env.EMAIL_USER}>`,
-            to: user.email,
-            subject: 'إعادة تعيين كلمة المرور لمتجر Zantiva',
-            text: message,
-        });
-        res.status(200).json({ message: 'تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني.' });
-    } catch (err) {
-        console.error('ERROR IN FORGOT PASSWORD:', err);
-        res.status(200).json({ message: 'إذا كان بريدك الإلكتروني مسجلاً لدينا، فستتلقى رابطًا لإعادة تعيين كلمة المرور.' });
-    }
-});
-app.post('/api/users/reset-password/:token', async (req, res) => {
-    try {
-        const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
-        const user = await User.findOne({
-            passwordResetToken: hashedToken,
-            passwordResetExpires: { $gt: Date.now() },
-        });
-        if (!user) {
-            return res.status(400).json({ message: 'التوكن غير صالح أو انتهت صلاحيته.' });
-        }
-        user.password = req.body.password;
-        user.passwordResetToken = undefined;
-        user.passwordResetExpires = undefined;
-        await user.save();
-        res.status(200).json({ message: 'تم تغيير كلمة المرور بنجاح!' });
-    } catch (error) {
-        res.status(500).json({ message: 'حدث خطأ أثناء إعادة تعيين كلمة المرور.' });
-    }
-});
-app.get('/api/users/myorders', protect, async (req, res) => {
-    try {
-        const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
-        res.json(orders);
-    } catch (error) {
-        res.status(500).json({ message: 'فشل في جلب طلبات المستخدم' });
-    }
-});
-app.get('/api/users/cart', protect, (req, res) => {
-    res.status(200).json(req.user.cart);
-});
-app.post('/api/users/cart', protect, async (req, res) => {
-    try {
-        const { cart } = req.body;
-        const user = await User.findById(req.user._id);
-        if (user) {
-            user.cart = cart;
-            const updatedUser = await user.save();
-            res.status(200).json(updatedUser.cart);
-        } else {
-            res.status(404).json({ message: 'المستخدم غير موجود' });
-        }
-    } catch (error) {
-        res.status(500).json({ message: 'خطأ في تحديث السلة' });
-    }
-});
-app.put('/api/users/profile/password', protect, async (req, res) => {
-    try {
-        const { currentPassword, newPassword } = req.body;
-        const user = await User.findById(req.user._id);
-
-        if (user && (await user.matchPassword(currentPassword))) {
-            const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
-            if (!passwordRegex.test(newPassword)) {
-                return res.status(400).json({ message: 'كلمة السر الجديدة يجب أن تكون 8 أحرف على الأقل وتحتوي على أرقام وحروف.' });
-            }
-
-            user.password = newPassword;
-            await user.save();
-            res.status(200).json({ message: 'تم تحديث كلمة المرور بنجاح.' });
-        } else {
-            res.status(401).json({ message: 'كلمة المرور الحالية غير صحيحة.' });
-        }
-    } catch (error) {
-        console.error('Error updating password:', error);
-        res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء تحديث كلمة المرور.' });
-    }
-});
-
-app.put('/api/users/profile/shipping', protect, async (req, res) => {
-    try {
-        const user = await User.findById(req.user._id);
-        if (user) {
-            user.shippingDetails = req.body;
-            const updatedUser = await user.save();
-            res.json({
-                message: 'تم حفظ بيانات الشحن بنجاح.',
-                shippingDetails: updatedUser.shippingDetails
-            });
-        } else {
-            res.status(404).json({ message: 'المستخدم غير موجود' });
-        }
-    } catch (error) {
-        console.error('Error updating shipping details:', error);
-        res.status(500).json({ message: 'فشل في تحديث بيانات الشحن' });
-    }
-});
-
-app.get('/api/users/wishlist', protect, async (req, res) => {
-    try {
-        const user = await User.findById(req.user._id);
-        const wishlistedProducts = await Product.find({ id: { $in: user.wishlist }, isDeleted: { $ne: true } });
-        res.json(wishlistedProducts);
-    } catch (error) {
-        res.status(500).json({ message: "فشل في جلب قائمة المفضلة" });
-    }
-});
-
-app.post('/api/users/wishlist/add', protect, async (req, res) => {
-    try {
-        const { productId } = req.body;
-        const user = await User.findByIdAndUpdate(
-            req.user._id,
-            { $addToSet: { wishlist: productId } },
-            { new: true }
-        );
-        res.status(200).json(user.wishlist);
-    } catch (error) {
-        res.status(500).json({ message: "فشل في إضافة المنتج للمفضلة" });
-    }
-});
-
-app.post('/api/users/wishlist/remove', protect, async (req, res) => {
-    try {
-        const { productId } = req.body;
-        const user = await User.findByIdAndUpdate(
-            req.user._id,
-            { $pull: { wishlist: productId } },
-            { new: true }
-        );
-        res.status(200).json(user.wishlist);
-    } catch (error) {
-        res.status(500).json({ message: "فشل في حذف المنتج من المفضلة" });
+        res.status(401).json({ message: 'كلمة السر غير صحيحة.' });
     }
 });
 
 
-// --- COUPON APIS ---
-app.post('/api/coupons', protect, admin, async (req, res) => {
+// --- COUPON APIS (محمية) ---
+app.post('/api/coupons', protectAdmin, async (req, res) => {
     try {
         const { code, discountType, value, expiryDate } = req.body;
         const newCoupon = new Coupon({ code, discountType, value, expiryDate });
@@ -454,7 +136,7 @@ app.post('/api/coupons', protect, admin, async (req, res) => {
     }
 });
 
-app.get('/api/coupons', protect, admin, async (req, res) => {
+app.get('/api/coupons', protectAdmin, async (req, res) => {
     try {
         const coupons = await Coupon.find({});
         res.json(coupons);
@@ -463,7 +145,7 @@ app.get('/api/coupons', protect, admin, async (req, res) => {
     }
 });
 
-app.put('/api/coupons/:id', protect, admin, async (req, res) => {
+app.put('/api/coupons/:id', protectAdmin, async (req, res) => {
     try {
         const coupon = await Coupon.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!coupon) {
@@ -475,7 +157,7 @@ app.put('/api/coupons/:id', protect, admin, async (req, res) => {
     }
 });
 
-app.delete('/api/coupons/:id', protect, admin, async (req, res) => {
+app.delete('/api/coupons/:id', protectAdmin, async (req, res) => {
     try {
         const coupon = await Coupon.findByIdAndDelete(req.params.id);
         if (!coupon) {
@@ -509,39 +191,22 @@ app.post('/api/coupons/verify', async (req, res) => {
 });
 
 
-// --- Contact Form API ---
-app.post('/api/contact', async (req, res) => {
-    const { from_name, from_email, message } = req.body;
+// --- Products API ---
+// المسارات العامة التي لا تحتاج حماية
+app.get('/api/products/search', async (req, res) => { try { const keyword = req.query.keyword ? { name: { $regex: req.query.keyword, $options: 'i' } } : {}; const products = await Product.find({ ...keyword, isDeleted: { $ne: true } }); res.json(products); } catch (error) { res.status(500).json({ message: 'فشل في البحث عن المنتجات' }); } });
 
-    const data = {
-        service_id: process.env.EMAILJS_SERVICE_ID,
-        template_id: process.env.EMAILJS_TEMPLATE_ID,
-        user_id: process.env.EMAILJS_PUBLIC_KEY,
-        accessToken: process.env.EMAILJS_PRIVATE_KEY,
-        template_params: {
-            from_name,
-            from_email,
-            message
-        }
-    };
-
-    try {
-        await axios.post('https://api.emailjs.com/api/v1.0/email/send', data, {
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        res.status(200).json({ message: 'تم إرسال الرسالة بنجاح!' });
-    } catch (error) {
-        console.error('EmailJS backend error:', error.response ? error.response.data : error.message);
-        res.status(500).json({ message: 'فشل إرسال الرسالة من السيرفر.' });
-    }
+// --- بداية التعديل ---
+// المسار المحدد يجب أن يأتي أولاً
+app.get('/api/products/deleted', protectAdmin, async (req, res) => { 
+    try { 
+        const deletedProducts = await Product.find({ isDeleted: true }); 
+        res.json(deletedProducts); 
+    } catch (error) { 
+        res.status(500).json({ message: 'فشل في جلب المنتجات المحذوفة' }); 
+    } 
 });
 
-
-// --- Products API ---
-app.get('/api/products/search', async (req, res) => { try { const keyword = req.query.keyword ? { name: { $regex: req.query.keyword, $options: 'i' } } : {}; const products = await Product.find({ ...keyword, isDeleted: { $ne: true } }); res.json(products); } catch (error) { res.status(500).json({ message: 'فشل في البحث عن المنتجات' }); } });
-app.get('/api/products/deleted', protect, admin, async (req, res) => { try { const deletedProducts = await Product.find({ isDeleted: true }); res.json(deletedProducts); } catch (error) { res.status(500).json({ message: 'فشل في جلب المنتجات المحذوفة' }); } });
+// المسار العام يأتي بعده
 app.get('/api/products/:id', async (req, res) => {
     try {
         const product = await Product.findOne({ id: req.params.id, isDeleted: { $ne: true } });
@@ -556,10 +221,18 @@ app.get('/api/products/:id', async (req, res) => {
         res.status(500).json({ message: 'فشل في جلب تفاصيل المنتج' });
     }
 });
-app.post('/api/products', protect, admin, async (req, res) => { try { const lastProduct = await Product.findOne().sort({ id: -1 }); const newId = lastProduct ? lastProduct.id + 1 : 1; const newProduct = new Product({ id: newId, ...req.body }); const savedProduct = await newProduct.save(); res.status(201).json(savedProduct); } catch (error) { res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء إضافة المنتج' }); } });
-app.put('/api/products/:id', protect, admin, async (req, res) => { try { const updatedProduct = await Product.findOneAndUpdate({ id: req.params.id }, req.body, { new: true }); if (!updatedProduct) { return res.status(404).json({ message: 'المنتج غير موجود' }); } res.json(updatedProduct); } catch (error) { res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء تحديث المنتج' }); } });
-app.delete('/api/products/:id', protect, admin, async (req, res) => { try { const result = await Product.findOneAndUpdate({ id: req.params.id }, { isDeleted: true }, { new: true }); if (!result) { return res.status(404).json({ message: 'المنتج غير موجود' }); } res.status(200).json({ message: 'تم نقل المنتج لسلة المحذوفات' }); } catch (error) { res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء حذف المنتج' }); } });
-app.post('/api/products/:id/restore', protect, admin, async (req, res) => { try { const result = await Product.findOneAndUpdate({ id: req.params.id }, { isDeleted: false }, { new: true }); if (!result) { return res.status(404).json({ message: 'المنتج المحذوف غير موجود' }); } res.status(200).json({ message: 'تم استرجاع المنتج بنجاح' }); } catch (error) { res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء استرجاع المنتج' }); } });
+// --- نهاية التعديل ---
+
+
+// المسارات المحمية الخاصة بالأدمن
+app.post('/api/products', protectAdmin, async (req, res) => { try { const lastProduct = await Product.findOne().sort({ id: -1 }); const newId = lastProduct ? lastProduct.id + 1 : 1; const newProduct = new Product({ id: newId, ...req.body }); const savedProduct = await newProduct.save(); res.status(201).json(savedProduct); } catch (error) { 
+        console.error('ERROR:', error);
+        res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء إضافة المنتج' }); 
+    } 
+});
+app.put('/api/products/:id', protectAdmin, async (req, res) => { try { const updatedProduct = await Product.findOneAndUpdate({ id: req.params.id }, req.body, { new: true }); if (!updatedProduct) { return res.status(404).json({ message: 'المنتج غير موجود' }); } res.json(updatedProduct); } catch (error) { res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء تحديث المنتج' }); } });
+app.delete('/api/products/:id', protectAdmin, async (req, res) => { try { const result = await Product.findOneAndUpdate({ id: req.params.id }, { isDeleted: true }, { new: true }); if (!result) { return res.status(404).json({ message: 'المنتج غير موجود' }); } res.status(200).json({ message: 'تم نقل المنتج لسلة المحذوفات' }); } catch (error) { res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء حذف المنتج' }); } });
+app.post('/api/products/:id/restore', protectAdmin, async (req, res) => { try { const result = await Product.findOneAndUpdate({ id: req.params.id }, { isDeleted: false }, { new: true }); if (!result) { return res.status(404).json({ message: 'المنتج المحذوف غير موجود' }); } res.status(200).json({ message: 'تم استرجاع المنتج بنجاح' }); } catch (error) { res.status(500).json({ message: 'حدث خطأ في السيرفر أثناء استرجاع المنتج' }); } });
 
 
 // --- Orders API ---
@@ -568,18 +241,7 @@ app.post('/api/orders', async (req, res) => {
     session.startTransaction();
     try {
         const { customerDetails, cartItems, couponCode } = req.body;
-        let user = null;
-        let token = null;
-
-        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-            token = req.headers.authorization.split(' ')[1];
-            try {
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                user = await User.findById(decoded.id).session(session);
-            } catch (e) {
-                console.log("توكن غير صالح أو منتهي الصلاحية، سيتم التعامل مع الطلب كزائر.");
-            }
-        }
+        
         if (!customerDetails || !cartItems || cartItems.length === 0) {
             return res.status(400).json({ message: 'البيانات المرسلة غير كاملة أو السلة فارغة.' });
         }
@@ -628,10 +290,6 @@ app.post('/api/orders', async (req, res) => {
             totalPrice: finalPrice 
         };
 
-        if (user) {
-            newOrderData.user = user._id;
-        }
-
         const newOrder = new Order(newOrderData);
         await newOrder.save({ session });
 
@@ -644,11 +302,6 @@ app.post('/api/orders', async (req, res) => {
         });
         await Promise.all(stockUpdatePromises);
 
-        if (user) {
-            user.cart = [];
-            await user.save({ session });
-        }
-
         await session.commitTransaction();
         res.status(201).json(newOrder);
     } catch (error) {
@@ -660,16 +313,16 @@ app.post('/api/orders', async (req, res) => {
     }
 });
 
-app.get('/api/orders', protect, admin, async (req, res) => { 
+app.get('/api/orders', protectAdmin, async (req, res) => { 
     try { 
-        const orders = await Order.find({}).populate('user', 'name email').sort({ createdAt: -1 }); 
+        const orders = await Order.find({}).sort({ createdAt: -1 }); 
         res.json(orders); 
     } catch (error) { 
         res.status(500).json({ message: 'فشل في جلب الطلبات' }); 
     } 
 });
 
-app.put('/api/orders/:id/status', protect, admin, async (req, res) => {
+app.put('/api/orders/:id/status', protectAdmin, async (req, res) => {
     const { id } = req.params;
     const { status: newStatus } = req.body;
     
@@ -677,26 +330,18 @@ app.put('/api/orders/:id/status', protect, admin, async (req, res) => {
     session.startTransaction();
 
     try {
-        if (!newStatus) {
-            throw new Error('حالة الطلب الجديدة مطلوبة.');
-        }
-        if (!Order.schema.path('status').enumValues.includes(newStatus)) {
-            throw new Error('حالة الطلب غير صالحة.');
-        }
+        if (!newStatus) { throw new Error('حالة الطلب الجديدة مطلوبة.'); }
+        if (!Order.schema.path('status').enumValues.includes(newStatus)) { throw new Error('حالة الطلب غير صالحة.'); }
 
         const order = await Order.findById(id).session(session);
-        if (!order) {
-            throw new Error('الطلب غير موجود.');
-        }
+        if (!order) { throw new Error('الطلب غير موجود.'); }
 
         const oldStatus = order.status;
-
         if (oldStatus === newStatus) {
             await session.abortTransaction();
             session.endSession();
             return res.json(order);
         }
-
         if (newStatus === 'ملغي' && oldStatus !== 'ملغي') {
             const restockPromises = order.products.map(p =>
                 Product.updateOne(
@@ -707,13 +352,10 @@ app.put('/api/orders/:id/status', protect, admin, async (req, res) => {
             );
             await Promise.all(restockPromises);
         }
-
         order.status = newStatus;
         const updatedOrder = await order.save({ session });
-
         await session.commitTransaction();
         res.json(updatedOrder);
-
     } catch (error) {
         await session.abortTransaction();
         console.error("خطأ في تحديث حالة الطلب:", error);
@@ -722,55 +364,6 @@ app.put('/api/orders/:id/status', protect, admin, async (req, res) => {
         session.endSession();
     }
 });
-
-// --- بداية الجزء الجديد: مسار إلغاء الطلب من قبل المستخدم ---
-app.put('/api/orders/:id/cancel', protect, async (req, res) => {
-    const { id } = req.params;
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    try {
-        const order = await Order.findById(id).session(session);
-
-        if (!order) {
-            throw new Error('الطلب غير موجود.');
-        }
-        // نتأكد إن الطلب ده يخص المستخدم اللي عامل تسجيل دخول
-        if (order.user.toString() !== req.user._id.toString()) {
-            throw new Error('غير مصرح لك بإلغاء هذا الطلب.');
-        }
-
-        // نتأكد إن الطلب لسه قيد المراجعة
-        if (order.status !== 'قيد المراجعة') {
-            throw new Error('لا يمكن إلغاء الطلب بعد تأكيده أو شحنه.');
-        }
-
-        // نرجع الكميات للمخزون
-        const restockPromises = order.products.map(p =>
-            Product.updateOne(
-                { id: p.productId, 'sizes.name': p.size },
-                { $inc: { 'sizes.$.stock': p.quantity } },
-                { session }
-            )
-        );
-        await Promise.all(restockPromises);
-
-        // نغير حالة الطلب لـ "ملغي"
-        order.status = 'ملغي';
-        const updatedOrder = await order.save({ session });
-
-        await session.commitTransaction();
-        res.json(updatedOrder);
-
-    } catch (error) {
-        await session.abortTransaction();
-        console.error("خطأ في إلغاء الطلب:", error);
-        res.status(400).json({ message: error.message || 'فشل في إلغاء الطلب' });
-    } finally {
-        session.endSession();
-    }
-});
-// --- نهاية الجزء الجديد ---
 
 
 // --- الجزء الخاص بالملفات الثابتة والمسارات النهائية ---

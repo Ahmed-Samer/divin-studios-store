@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تفاصيل المنتج - Zantiva Store</title>
+    <title>تفاصيل المنتج - Xinorgt</title>
     <link rel="icon" type="image/png" href="images/favicon.png">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -14,22 +14,23 @@
             <div class="nav-section right">
                 <ul class="expanded-links">
                     <li><a href="index.html?category=رجالي">رجالي</a></li>
-                    <li><a href="index.html?category=نسائي">نسائي</a></li>
-                    <li><a href="index.html?category=اطفالي">أطفال</a></li>
                     <li><a href="about.html">عن المتجر</a></li>
                     <li><a href="contact.html">تواصل معنا</a></li>
-                    <div id="user-navigation-links-mobile"></div> 
                 </ul>
-                <button class="menu-toggle-btn">الأقسام ☰</button>
+                <button class="menu-toggle-btn">☰</button>
             </div>
             <div class="nav-section middle">
-                <a href="index.html" class="logo">Zantiva Store</a>
+                <a href="index.html" class="logo">Xinorgt</a>
             </div>
             <div class="nav-section left">
-                <div id="user-actions" class="user-actions">
-                </div>
                 <a href="cart.html" class="cart-link">
-                    <span class="cart-icon">🛒</span>
+                    <span class="cart-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M21.92,6.62a1,1,0,0,0-.79-.38H6.52L6,3.74A1,1,0,0,0,5,3H3A1,1,0,0,0,3,5H4.24L7,15.26A1,1,0,0,0,8,16H18a1,1,0,0,0,.95-.68l3-7A1,1,0,0,0,21.92,6.62ZM8.53,14,6.74,7H20.26l-2.5,5.83Z"/>
+                            <circle cx="9" cy="20" r="2"/>
+                            <circle cx="17" cy="20" r="2"/>
+                        </svg>
+                    </span>
                     <span class="cart-count">0</span>
                 </a>
                  <div class="search-container">
@@ -56,6 +57,10 @@
                     <p class="product-price-large">...</p>
                     <div class="product-description"><p>جاري تحميل التفاصيل...</p></div>
                     
+                    <div class="size-guide-container">
+                        <button id="open-size-guide-btn" class="btn-secondary">دليل المقاسات</button>
+                    </div>
+
                     <div class="product-options">
                         <div class="option-group">
                             <label>المقاس:</label>
@@ -75,8 +80,6 @@
 
                     <div class="product-actions-container">
                         <button class="add-to-cart-btn">أضف إلى السلة</button>
-                        <button class="btn-wishlist" id="product-page-wishlist-btn" title="إضافة إلى المفضلة">
-                            &#x2665; </button>
                     </div>
                     </div>
             </div>
@@ -96,9 +99,65 @@
                 <a href="#">انستجرام</a>
                 <a href="#">تويتر</a>
             </div>
-            <p class="copyright">&copy; 2025 Zantiva Store. كل الحقوق محفوظة.</p>
+            <p class="copyright">&copy; 2025 Xinorgt. كل الحقوق محفوظة.</p>
         </div>
     </footer>
+    
+    <div id="size-guide-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn">&times;</button>
+            <h3>دليل المقاسات (مثال)</h3>
+            <table class="size-guide-table">
+                <thead>
+                    <tr>
+                        <th>المقاس</th>
+                        <th>محيط الصدر (سم)</th>
+                        <th>محيط الخصر (سم)</th>
+                        <th>الطول (سم)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>S</td>
+                        <td>92-97</td>
+                        <td>76-81</td>
+                        <td>69-71</td>
+                    </tr>
+                    <tr>
+                        <td>M</td>
+                        <td>98-102</td>
+                        <td>82-86</td>
+                        <td>71-74</td>
+                    </tr>
+                    <tr>
+                        <td>L</td>
+                        <td>103-108</td>
+                        <td>87-92</td>
+                        <td>74-76</td>
+                    </tr>
+                    <tr>
+                        <td>XL</td>
+                        <td>109-114</td>
+                        <td>93-98</td>
+                        <td>76-79</td>
+                    </tr>
+                    <tr>
+                        <td>XXL</td>
+                        <td>115-120</td>
+                        <td>99-104</td>
+                        <td>79-82</td>
+                    </tr>
+                    <tr>
+                        <td>XXXL</td>
+                        <td>121-126</td>
+                        <td>105-110</td>
+                        <td>82-85</td>
+                    </tr>
+                    </tbody>
+            </table>
+            <p style="font-size: 14px; text-align: center; margin-top: 20px;">* هذه المقاسات هي مقاسات تقريبية وقد تختلف قليلاً من منتج لآخر.</p>
+        </div>
+    </div>
 
     <div id="toast-container"></div>
 <script type="module" src="js/main.js"></script>

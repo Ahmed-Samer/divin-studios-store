@@ -4,7 +4,22 @@ let allProducts = [];
 let allOrders = [];
 let allCoupons = [];
 let currentAdminCategoryFilter = 'all';
-let authToken = '';
+
+// --- بداية: دالة مساعدة لجلب التصريح ---
+function getAuthHeaders() {
+    const token = JSON.parse(localStorage.getItem('adminToken'));
+    if (!token) {
+        // لو مفيش تصريح، نرجع المستخدم لصفحة الدخول
+        window.location.href = '/login.html';
+        return null; // نوقف التنفيذ
+    }
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+}
+// --- نهاية: دالة مساعدة لجلب التصريح ---
+
 
 function showSpinner(containerElement) {
     if (containerElement) {
@@ -15,14 +30,15 @@ function showSpinner(containerElement) {
 
 // الدالة الرئيسية اللي بتشغل كل حاجة في صفحة الأدمن
 export function initializeAdminPage(products) {
-    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-    if (!userInfo || !userInfo.token || !userInfo.isAdmin) {
+    // --- بداية: تفعيل حماية الصفحة ---
+    const token = JSON.parse(localStorage.getItem('adminToken'));
+    if (!token) {
         showToast('غير مصرح لك بالدخول لهذه الصفحة.', true);
-        document.body.innerHTML = '<h1 style="text-align: center; margin-top: 50px; color: #ff6b6b;">غير مصرح لك بالدخول</h1>';
-        setTimeout(() => { window.location.href = 'index.html'; }, 2500);
+        document.body.innerHTML = '<h1 style="text-align: center; margin-top: 50px; color: #ff6b6b;">غير مصرح لك بالدخول، سيتم تحويلك...</h1>';
+        setTimeout(() => { window.location.href = 'login.html'; }, 2500);
         return;
     }
-    authToken = userInfo.token;
+    // --- نهاية: تفعيل حماية الصفحة ---
 
     allProducts = products;
     setupAdminEventListeners();
@@ -96,7 +112,6 @@ function setupAdminEventListeners() {
     const addSizeBtn = document.getElementById('add-size-btn');
     if(addSizeBtn) addSizeBtn.addEventListener('click', () => addSizeStockRow());
 
-    // Event Delegation for coupon buttons
     const couponListContainer = document.getElementById('manage-coupons-list');
     if(couponListContainer) {
         couponListContainer.addEventListener('click', (event) => {
@@ -110,15 +125,17 @@ function setupAdminEventListeners() {
     }
 }
 
-// --- دوال الكوبونات (معدلة بالكامل) ---
 async function displayAdminCoupons() {
     const listContainer = document.getElementById('manage-coupons-list');
     if (!listContainer) return;
     showSpinner(listContainer);
+    
+    // --- تعديل: إضافة التصريح لطلبات الـ API ---
+    const headers = getAuthHeaders();
+    if (!headers) return; // توقف لو مفيش تصريح
+
     try {
-        const response = await fetch('/api/coupons', {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        });
+        const response = await fetch('/api/coupons', { headers });
         if (!response.ok) throw new Error('فشل جلب الكوبونات');
         allCoupons = await response.json();
         
@@ -179,7 +196,6 @@ function handleEditCoupon(id) {
     document.getElementById('coupon-code').value = coupon.code;
     document.getElementById('coupon-type').value = coupon.discountType;
     document.getElementById('coupon-value').value = coupon.value;
-    // Format date for the date input which requires YYYY-MM-DD
     document.getElementById('coupon-expiry').value = new Date(coupon.expiryDate).toISOString().split('T')[0];
 
     document.getElementById('coupon-form-title').textContent = `تعديل الكوبون: ${coupon.code}`;
@@ -197,16 +213,16 @@ function resetCouponForm() {
 
 async function handleDeleteCoupon(id) {
     if (!confirm(`هل أنت متأكد من حذف هذا الكوبون؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+    
+    const headers = getAuthHeaders();
+    if (!headers) return;
 
     try {
-        const response = await fetch(`/api/coupons/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        });
+        const response = await fetch(`/api/coupons/${id}`, { method: 'DELETE', headers });
         const data = await response.json();
         if (response.ok) {
             showToast(data.message);
-            displayAdminCoupons(); // Refresh the list
+            displayAdminCoupons();
         } else {
             throw new Error(data.message);
         }
@@ -217,7 +233,6 @@ async function handleDeleteCoupon(id) {
 
 async function handleCouponFormSubmit(event) {
     event.preventDefault();
-
     const couponId = document.getElementById('coupon-id').value;
     const isEditMode = !!couponId;
 
@@ -235,21 +250,20 @@ async function handleCouponFormSubmit(event) {
 
     const url = isEditMode ? `/api/coupons/${couponId}` : '/api/coupons';
     const method = isEditMode ? 'PUT' : 'POST';
+    const headers = getAuthHeaders();
+    if (!headers) return;
 
     try {
         const response = await fetch(url, {
             method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
+            headers: headers,
             body: JSON.stringify(couponData)
         });
         const data = await response.json();
         if (response.ok) {
             showToast(isEditMode ? 'تم تحديث الكوبون بنجاح!' : 'تم إنشاء الكوبون بنجاح!');
             resetCouponForm();
-            displayAdminCoupons(); // تحديث القائمة
+            displayAdminCoupons();
         } else {
             throw new Error(data.message);
         }
@@ -257,8 +271,6 @@ async function handleCouponFormSubmit(event) {
         showToast(error.message, true);
     }
 }
-// --- نهاية دوال الكوبونات ---
-
 
 function applyAdminFiltersAndSearch() { 
     const searchBar = document.getElementById('admin-search-bar');
@@ -295,10 +307,12 @@ async function displayDeletedProducts() {
     const listContainer = document.getElementById('deleted-products-list');
     if (!listContainer) return;
     showSpinner(listContainer); 
+    
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
     try {
-        const response = await fetch('/api/products/deleted', {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        });
+        const response = await fetch('/api/products/deleted', { headers });
         if (!response.ok) {
             const err = await response.json();
             throw new Error(err.message || 'فشل جلب المنتجات المحذوفة');
@@ -325,10 +339,12 @@ async function displayAdminOrders() {
     const listContainer = document.getElementById('manage-orders-list');
     if (!listContainer) return;
     showSpinner(listContainer); 
+    
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
     try {
-        const response = await fetch('/api/orders', {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        });
+        const response = await fetch('/api/orders', { headers });
         if (!response.ok) {
             const err = await response.json();
             throw new Error(err.message || 'فشل جلب الطلبات');
@@ -341,9 +357,7 @@ async function displayAdminOrders() {
         }
         allOrders.forEach(order => {
             const orderDate = new Date(order.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-            const customerName = order.user 
-                ? `${order.user.name} (${order.user.email})` 
-                : `${order.customerDetails.fullName} (ضيف)`;
+            const customerName = order.customerDetails.fullName;
 
             const orderItemHTML = `
                 <div class="managed-order-item" id="order-${order._id}">
@@ -383,8 +397,7 @@ function createOrderDetailsModal(orderId) {
     const statusOptions = statuses.map(s => `<option value="${s}" ${s === order.status ? 'selected' : ''}>${s}</option>`).join('');
     const productsRows = order.products.map(p => `<tr><td>${p.name}</td><td>${p.size}</td><td>${p.quantity}</td><td>${p.price.toFixed(2)} ج.م</td></tr>`).join('');
     
-    const customerName = order.user ? order.user.name : order.customerDetails.fullName;
-    const customerIdentifier = order.user ? `(${order.user.email})` : '(ضيف)';
+    const customerName = order.customerDetails.fullName;
 
     const subtotal = order.subtotal !== undefined ? order.subtotal : order.totalPrice;
     const finalPrice = order.totalPrice;
@@ -402,7 +415,7 @@ function createOrderDetailsModal(orderId) {
             <h3>تفاصيل الطلب (رقم: ${order._id})</h3>
             <h4>بيانات العميل</h4>
             <div class="order-details-grid">
-                <p><strong>الاسم:</strong> ${customerName} <em>${customerIdentifier}</em></p>
+                <p><strong>الاسم:</strong> ${customerName}</p>
                 <p><strong>الهاتف:</strong> ${order.customerDetails.phone}</p>
                 <p><strong>المحافظة:</strong> ${order.customerDetails.governorate}</p>
                 <p><strong>المدينة:</strong> ${order.customerDetails.city}</p>
@@ -440,12 +453,16 @@ function createOrderDetailsModal(orderId) {
         e.preventDefault();
         const newStatus = modalOverlay.querySelector('#status-select').value;
         const submitBtn = e.target.querySelector('button');
+        
+        const headers = getAuthHeaders();
+        if(!headers) return;
+        
         submitBtn.disabled = true;
         submitBtn.textContent = 'جاري الحفظ...';
         try {
             const response = await fetch(`/api/orders/${orderId}/status`, { 
                 method: 'PUT', 
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` }, 
+                headers: headers,
                 body: JSON.stringify({ status: newStatus }) 
             });
             if (response.ok) {
@@ -458,8 +475,11 @@ function createOrderDetailsModal(orderId) {
 }
 
 async function refreshAllAdminLists() { 
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
     try { 
-        const response = await fetch('/api/products/search?keyword='); 
+        const response = await fetch('/api/products/search?keyword='); // This one is public, no headers needed
         if (!response.ok) throw new Error('Failed to fetch latest products'); 
         allProducts = await response.json();
         applyAdminFiltersAndSearch(); 
@@ -471,11 +491,10 @@ async function refreshAllAdminLists() {
 }
 
 async function handleRestoreProduct(id) { 
+    const headers = getAuthHeaders();
+    if (!headers) return;
     try { 
-        const response = await fetch(`/api/products/${id}/restore`, { 
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        }); 
+        const response = await fetch(`/api/products/${id}/restore`, { method: 'POST', headers });
         if (response.ok) { 
             showToast('تم استرجاع المنتج بنجاح ✔️'); 
             await refreshAllAdminLists(); 
@@ -490,11 +509,12 @@ async function handleRestoreProduct(id) {
 
 async function handleDeleteProduct(id) { 
     if (!confirm('هل أنت متأكد من نقل هذا المنتج إلى سلة المحذوفات؟')) return;
+    
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
     try { 
-        const response = await fetch(`/api/products/${id}`, { 
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        }); 
+        const response = await fetch(`/api/products/${id}`, { method: 'DELETE', headers });
         if (response.ok) { 
             showToast('تم نقل المنتج إلى سلة المحذوفات ✔️'); 
             await refreshAllAdminLists(); 
@@ -609,21 +629,38 @@ async function handleProductFormSubmit(event) {
     if (isEditMode) { productData.id = productId; }
     const url = isEditMode ? `/api/products/${productData.id}` : '/api/products';
     const method = isEditMode ? 'PUT' : 'POST';
+    
+    const headers = getAuthHeaders();
+    if (!headers) return;
 
     try {
         const response = await fetch(url, { 
             method: method, 
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` }, 
+            headers: headers,
             body: JSON.stringify(productData) 
         });
+
         if (response.ok) {
             const successMessage = isEditMode ? 'تم تحديث المنتج بنجاح!' : 'تمت إضافة المنتج بنجاح!';
             showToast(successMessage);
             resetAdminForm();
             await refreshAllAdminLists();
         } else {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'فشل في تنفيذ العملية');
+            const errorText = await response.text();
+            let errorMessage = `حدث خطأ: ${response.status} ${response.statusText}`;
+            
+            if (errorText) {
+                try {
+                    const errorData = JSON.parse(errorText);
+                    errorMessage = errorData.message || errorMessage;
+                } catch (e) {
+                    console.error("Server returned non-JSON error:", errorText);
+                    errorMessage = "السيرفر أرسل ردًا غير متوقع.";
+                }
+            } else {
+                errorMessage = "السيرفر أرسل ردًا فارغًا مع وجود خطأ.";
+            }
+            throw new Error(errorMessage);
         }
     } catch (error) {
         showToast(error.message, true);

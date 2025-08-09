@@ -1,13 +1,92 @@
 // استدعاء كل الدوال اللازمة من باقي الملفات
 import { initializeAdminPage } from './admin.js';
-import { handleLoginForm, handleRegisterForm, updateUserNav, initializeRegisterPageListeners, handleForgotPasswordForm, handleResetPasswordForm, setupPasswordToggle } from './auth.js';
-import { showToast, updateCartIcon, addToCart, displayCartItems, displayCheckoutSummary, handleOrderSubmission, prefillCheckoutForm } from './cart.js';
-import { initializeProfilePage } from './profile.js';
+import { showToast, updateCartIcon, addToCart, displayCartItems, displayCheckoutSummary, handleOrderSubmission } from './cart.js';
 
 // متغيرات عامة
 let allProducts = [];
-let wishlist = []; 
-const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+
+// --- بداية: دالة الهيدر عند السكرول ---
+function handleHeaderScroll() {
+    const header = document.querySelector('.main-header');
+    if (!header || !document.body.classList.contains('homepage')) {
+        return;
+    }
+
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            header.classList.add('header-scrolled');
+        } else {
+            header.classList.remove('header-scrolled');
+        }
+    });
+}
+// --- نهاية: دالة الهيدر عند السكرول ---
+
+
+function handleAdminLogin() {
+    const loginForm = document.getElementById('login-form');
+    if (!loginForm) return;
+
+    loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const password = document.getElementById('password').value;
+        const submitBtn = loginForm.querySelector('button[type="submit"]');
+
+        if (!password) {
+            showToast('من فضلك أدخل كلمة السر.', true);
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'جاري التحقق...';
+
+        try {
+            const response = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                localStorage.setItem('adminToken', JSON.stringify(data.token));
+                showToast('تم تسجيل الدخول بنجاح! جاري تحويلك للوحة التحكم.');
+                window.location.href = '/admin.html';
+            } else {
+                throw new Error(data.message || 'حدث خطأ غير متوقع.');
+            }
+        } catch (error) {
+            showToast(error.message, true);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'تسجيل الدخول';
+        }
+    });
+}
+
+
+function setupUserUI() {
+    const adminToken = JSON.parse(localStorage.getItem('adminToken'));
+    const userActionsContainer = document.querySelector('.nav-section.left');
+    
+    if (adminToken && userActionsContainer) {
+        const logoutBtn = document.createElement('a');
+        logoutBtn.href = '#';
+        logoutBtn.textContent = 'خروج';
+        logoutBtn.style.color = '#ff6b6b';
+        logoutBtn.style.fontWeight = 'bold';
+        logoutBtn.style.textDecoration = 'none';
+        logoutBtn.style.marginRight = '15px';
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('adminToken');
+            showToast('تم تسجيل الخروج.');
+            setTimeout(() => window.location.href = '/index.html', 1000);
+        });
+        userActionsContainer.insertBefore(logoutBtn, userActionsContainer.querySelector('.cart-link'));
+    }
+}
+
 
 function showSpinner(containerElement) {
     if (containerElement) {
@@ -15,10 +94,13 @@ function showSpinner(containerElement) {
     }
 }
 
+
 // --- بداية تشغيل التطبيق ---
 document.addEventListener('DOMContentLoaded', () => {
     setupCommonEventListeners();
     initializeApp();
+    setupUserUI();
+    handleHeaderScroll();
 });
 
 
@@ -55,21 +137,11 @@ function setupCommonEventListeners() {
         if (header.classList.contains('search-active')) {
             header.classList.remove('search-active');
         }
-        const userActions = document.querySelector('.user-actions.open');
-        if (userActions && !userActions.contains(e.target)) {
-            userActions.classList.remove('open');
-        }
     });
 
     header.addEventListener('click', (e) => {
-        if (e.target.closest('.expanded-links') || e.target.closest('.search-overlay') || e.target.closest('.user-actions')) {
+        if (e.target.closest('.expanded-links') || e.target.closest('.search-overlay')) {
             e.stopPropagation();
-        }
-    });
-
-    document.addEventListener('click', function(event) {
-        if (event.target.matches('.wishlist-icon')) {
-            handleWishlistToggle(event.target);
         }
     });
 }
@@ -83,30 +155,12 @@ async function initializeApp() {
     }
 
     try {
-        const productsPromise = fetch('/api/products/search?keyword=').then(res => {
-            if (!res.ok) throw new Error('فشل الاتصال بالسيرفر لجلب المنتجات');
-            return res.json();
-        });
-
-        if (userInfo && userInfo.token) {
-            const cartPromise = fetch('/api/users/cart', {
-                headers: { 'Authorization': `Bearer ${userInfo.token}` }
-            }).then(res => res.ok ? res.json() : []);
-
-            const wishlistPromise = fetch('/api/users/wishlist', {
-                 headers: { 'Authorization': `Bearer ${userInfo.token}` }
-            }).then(res => res.ok ? res.json() : []);
-
-            const [products, userCart, userWishlist] = await Promise.all([productsPromise, cartPromise, wishlistPromise]);
-            allProducts = products;
-            wishlist = userWishlist.map(p => p.id);
-            
-            localStorage.setItem('cart', JSON.stringify(userCart || []));
-            localStorage.setItem('userInfo', JSON.stringify({...userInfo, wishlist: wishlist}));
-
-        } else {
-            allProducts = await productsPromise;
-        }
+        const response = await fetch('/api/products/search?keyword=');
+        if (!response.ok) throw new Error('فشل الاتصال بالسيرفر لجلب المنتجات');
+        allProducts = await response.json();
+        
+        const localCart = JSON.parse(localStorage.getItem('cart')) || [];
+        localStorage.setItem('cart', JSON.stringify(localCart));
 
         runPageSpecificLogic();
 
@@ -122,7 +176,6 @@ async function initializeApp() {
 
 // دالة تعمل كـ "راوتر" لتشغيل الكود المناسب لكل صفحة
 function runPageSpecificLogic() {
-    updateUserNav();
     updateCartIcon();
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -140,100 +193,33 @@ function runPageSpecificLogic() {
     }
     if (document.querySelector('.checkout-page-container')) {
         displayCheckoutSummary(allProducts);
-        prefillCheckoutForm();
         const checkoutForm = document.getElementById('checkout-form');
         if (checkoutForm) {
             checkoutForm.addEventListener('submit', handleOrderSubmission);
         }
     }
-    if (document.getElementById('add-product-form')) {
-        initializeAdminPage(allProducts);
-    }
-    if (document.getElementById('login-form')) {
-        document.getElementById('login-form').addEventListener('submit', handleLoginForm);
-    }
-    if (document.getElementById('register-form')) {
-        document.getElementById('register-form').addEventListener('submit', handleRegisterForm);
-        initializeRegisterPageListeners(); 
-    }
-    if (document.getElementById('profile-page-container')) {
-        initializeProfilePage();
+    if (path.endsWith('admin.html')) {
+           initializeAdminPage(allProducts);
     }
     if (document.getElementById('contact-form')) {
         initializeContactForm();
     }
-    if (document.getElementById('forgot-password-form')) {
-        document.getElementById('forgot-password-form').addEventListener('submit', handleForgotPasswordForm);
+    if (path.endsWith('login.html')) {
+        handleAdminLogin();
     }
-    if (document.getElementById('reset-password-form')) {
-        document.getElementById('reset-password-form').addEventListener('submit', handleResetPasswordForm);
-    }
-    if (document.getElementById('favorites-grid')) {
-        initializeFavoritesPage();
-    }
-    
-    const googleLoginBtn = document.getElementById('google-login-btn');
-    if (googleLoginBtn) {
-        googleLoginBtn.addEventListener('click', () => {
-            window.location.href = '/api/users/auth/google';
-        });
-    }
-
-    const passwordContainers = document.querySelectorAll('.password-container');
-    passwordContainers.forEach(container => {
-        setupPasswordToggle(container);
-    });
 }
 
 
-// --- بداية الجزء المعدل ---
 function initializeContactForm() {
     const contactForm = document.getElementById('contact-form');
-    const submitBtn = document.getElementById('contact-submit-btn');
     if (!contactForm) return;
 
     contactForm.addEventListener('submit', async function(event) {
         event.preventDefault();
-        
-        submitBtn.textContent = 'جاري الإرسال...';
-        submitBtn.disabled = true;
-
-        // تجميع البيانات من الفورم
-        const formData = {
-            from_name: document.getElementById('contact-name').value,
-            from_email: document.getElementById('contact-email').value,
-            message: document.getElementById('contact-message').value,
-        };
-
-        try {
-            // إرسال البيانات للسيرفر بتاعنا
-            const response = await fetch('/api/contact', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
-            });
-            
-            const result = await response.json();
-
-            if (response.ok) {
-                showToast(result.message);
-                contactForm.reset();
-            } else {
-                throw new Error(result.message);
-            }
-
-        } catch (error) {
-            showToast(error.message || 'حدث خطأ أثناء إرسال الرسالة.', true);
-            console.error('Contact form error:', error);
-        } finally {
-            submitBtn.textContent = 'إرسال الرسالة';
-            submitBtn.disabled = false;
-        }
+        showToast('تم إرسال الرسالة (محاكاة).');
+        contactForm.reset();
     });
 }
-// --- نهاية الجزء المعدل ---
 
 function renderProducts(productsToRender, containerSelector = '.product-grid') {
     const productGrid = document.querySelector(containerSelector);
@@ -241,27 +227,16 @@ function renderProducts(productsToRender, containerSelector = '.product-grid') {
     productGrid.innerHTML = '';
 
     if (productsToRender.length === 0) {
-        if (containerSelector === '#favorites-grid') {
-            document.getElementById('empty-favorites-message').style.display = 'block';
-        } else {
-            productGrid.innerHTML = `<div class="empty-cart-container" style="display:block; grid-column: 1 / -1; text-align: center;"><h2>لا توجد منتجات تطابق بحثك.</h2><p>حاول استخدام كلمات بحث مختلفة.</p></div>`;
-        }
+        productGrid.innerHTML = `<div class="empty-cart-container" style="display:block; grid-column: 1 / -1; text-align: center;"><h2>لا توجد منتجات لعرضها.</h2></div>`;
         return;
-    }
-
-    if (containerSelector === '#favorites-grid') {
-        document.getElementById('empty-favorites-message').style.display = 'none';
     }
 
     productsToRender.forEach(product => {
         const totalStock = product.sizes.reduce((acc, size) => acc + size.stock, 0);
         const outOfStockBadge = totalStock === 0 ? '<div class="out-of-stock-badge">نفذت الكمية</div>' : '';
-        const isFavorited = wishlist.includes(product.id);
-        const wishlistIcon = userInfo ? `<div class="wishlist-icon-container"><div class="wishlist-icon ${isFavorited ? 'active' : ''}" data-product-id="${product.id}" title="إضافة للمفضلة">&#x2665;</div></div>` : '';
 
         const cardHTML = `
             <div class="product-card ${totalStock === 0 ? 'out-of-stock' : ''}">
-                ${wishlistIcon}
                 <a href="product.html?id=${product.id}" style="text-decoration: none; color: inherit;">
                     <div class="card-image">
                         ${outOfStockBadge}
@@ -279,56 +254,6 @@ function renderProducts(productsToRender, containerSelector = '.product-grid') {
     });
 }
 
-async function handleWishlistToggle(iconElement) {
-    if (!userInfo) {
-        showToast('يجب تسجيل الدخول أولاً لإضافة منتجات للمفضلة.', true);
-        return;
-    }
-    
-    const productId = parseInt(iconElement.dataset.productId);
-    const isFavorited = iconElement.classList.contains('active');
-    
-    const url = isFavorited ? '/api/users/wishlist/remove' : '/api/users/wishlist/add';
-    
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${userInfo.token}`
-            },
-            body: JSON.stringify({ productId })
-        });
-
-        if (response.ok) {
-            const updatedWishlist = await response.json();
-            wishlist = updatedWishlist; 
-            
-            const updatedUserInfo = { ...userInfo, wishlist: updatedWishlist };
-            localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
-
-            iconElement.classList.toggle('active');
-            
-            if (!isFavorited) {
-                const messageWithLink = `تم إضافة المنتج للمفضلة &nbsp; <a href='favorites.html' style='color: #0a192f; text-decoration: underline; font-weight: bold;'>عرض المفضلة</a>`;
-                showToast(messageWithLink);
-            } else {
-                showToast('تم حذف المنتج من المفضلة');
-                if (window.location.pathname.endsWith('favorites.html')) {
-                    iconElement.closest('.product-card').remove();
-                    if (document.querySelectorAll('#favorites-grid .product-card').length === 0) {
-                         document.getElementById('empty-favorites-message').style.display = 'block';
-                    }
-                }
-            }
-        } else {
-            throw new Error('فشل تحديث المفضلة');
-        }
-    } catch(error) {
-        showToast(error.message, true);
-    }
-}
-
 
 function initializeHomePage(urlParams) {
     const category = urlParams.get('category');
@@ -336,31 +261,12 @@ function initializeHomePage(urlParams) {
     renderProducts(initialProducts);
 
     const searchBars = [document.getElementById('search-bar'), document.getElementById('mobile-search-bar')];
-    let debounceTimer;
-
+    
     const handleSearch = (event) => {
         const searchTerm = event.target.value.toLowerCase().trim();
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(async () => {
-            const productGrid = document.querySelector('.product-grid');
-            if (productGrid) {
-                showSpinner(productGrid); 
-            }
-            try {
-                const response = await fetch(`/api/products/search?keyword=${encodeURIComponent(searchTerm)}`);
-                if (!response.ok) throw new Error('فشل البحث');
-                let filteredBySearch = await response.json();
-                
-                const finalResults = category 
-                    ? filteredBySearch.filter(p => p.category === category) 
-                    : filteredBySearch;
-
-                renderProducts(finalResults);
-            } catch (error) {
-                console.error("خطأ أثناء البحث:", error);
-                showToast('حدث خطأ أثناء البحث.', true);
-            }
-        }, 300);
+        let filteredBySearch = allProducts.filter(p => p.name.toLowerCase().includes(searchTerm));
+        const finalResults = category ? filteredBySearch.filter(p => p.category === category) : filteredBySearch;
+        renderProducts(finalResults);
     };
 
     searchBars.forEach(bar => {
@@ -399,16 +305,10 @@ async function initializeProductDetailPage(productId) {
                     addToCart(product.id, quantity, selectedSize, allProducts);
                 });
             }
-
-            const wishlistBtn = document.getElementById('product-page-wishlist-btn');
-            if(wishlistBtn) {
-                wishlistBtn.dataset.productId = product.id;
-                if(wishlist.includes(product.id)) {
-                    wishlistBtn.classList.add('active');
-                }
-                wishlistBtn.addEventListener('click', () => handleWishlistToggle(wishlistBtn));
-            }
-
+            
+            // --- بداية: تفعيل زرار دليل المقاسات ---
+            setupSizeGuideModal();
+            // --- نهاية: تفعيل زرار دليل المقاسات ---
 
             if (relatedProducts && relatedProducts.length > 0) {
                 renderProducts(relatedProducts, '#related-products-grid');
@@ -422,6 +322,32 @@ async function initializeProductDetailPage(productId) {
         if (productDetailLayout) productDetailLayout.innerHTML = '<h1>خطأ في تحميل المنتج. قد يكون غير موجود.</h1>';
     }
 }
+
+// --- بداية: دالة جديدة لتشغيل النافذة المنبثقة ---
+function setupSizeGuideModal() {
+    const openBtn = document.getElementById('open-size-guide-btn');
+    const modal = document.getElementById('size-guide-modal');
+    if (!openBtn || !modal) return;
+    
+    const closeBtn = modal.querySelector('.modal-close-btn');
+
+    openBtn.addEventListener('click', () => {
+        modal.classList.add('active');
+    });
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+}
+// --- نهاية: دالة جديدة لتشغيل النافذة المنبثقة ---
+
 
 function setupSizeSelector(product, container) {
     container.innerHTML = '';
@@ -507,28 +433,4 @@ function setupImageSlider(sliderWrapper) {
         currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
         showSlide(currentIndex);
     });
-}
-
-async function initializeFavoritesPage() {
-    if (!userInfo) {
-        window.location.href = 'login.html';
-        return;
-    }
-
-    const favoritesGrid = document.getElementById('favorites-grid');
-    showSpinner(favoritesGrid);
-
-    try {
-        const response = await fetch('/api/users/wishlist', {
-            headers: { 'Authorization': `Bearer ${userInfo.token}` }
-        });
-        if (!response.ok) {
-            throw new Error('فشل جلب قائمة المفضلة.');
-        }
-        const favoritedProducts = await response.json();
-        renderProducts(favoritedProducts, '#favorites-grid');
-    } catch (error) {
-        showToast(error.message, true);
-        favoritesGrid.innerHTML = `<p style="text-align:center; color: #ff6b6b;">${error.message}</p>`;
-    }
 }
