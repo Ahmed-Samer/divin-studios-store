@@ -246,7 +246,7 @@ function renderProducts(productsToRender, containerSelector = '.product-grid') {
                 <div class="card-content">
                     <h3 class="product-name">${product.name}</h3>
                     <p class="product-price">${product.price} ج.م</p>
-                    <a href="product.html?id=${product.id}" class="btn">عرض التفاصيل</a>
+                    <a href="product.html?id=${product.id}" class="btn">Shop Now</a>
                 </div>
             </div>
         `;
@@ -274,6 +274,7 @@ function initializeHomePage(urlParams) {
     });
 }
 
+// --- بداية التعديل ---
 async function initializeProductDetailPage(productId) {
     const productDetailLayout = document.querySelector('.product-detail-layout');
     try {
@@ -297,6 +298,7 @@ async function initializeProductDetailPage(productId) {
             setupSizeSelector(product, document.querySelector('.size-selector'));
             setupQuantitySelector();
 
+            // برمجة زرار "أضف إلى السلة"
             const addToCartButton = document.querySelector('.add-to-cart-btn');
             if (addToCartButton) {
                 addToCartButton.addEventListener('click', () => {
@@ -306,9 +308,22 @@ async function initializeProductDetailPage(productId) {
                 });
             }
             
-            // --- بداية: تفعيل زرار دليل المقاسات ---
+            // برمجة زرار "شراء الآن"
+            const buyNowBtn = document.getElementById('buy-now-btn');
+            if (buyNowBtn) {
+                buyNowBtn.addEventListener('click', () => {
+                    const selectedSize = document.querySelector('.size-btn.active')?.dataset.size;
+                    const quantity = parseInt(document.getElementById('quantity-input').value);
+                    
+                    const addedSuccessfully = addToCart(product.id, quantity, selectedSize, allProducts);
+                    
+                    if (addedSuccessfully) {
+                        window.location.href = 'checkout.html';
+                    }
+                });
+            }
+
             setupSizeGuideModal();
-            // --- نهاية: تفعيل زرار دليل المقاسات ---
 
             if (relatedProducts && relatedProducts.length > 0) {
                 renderProducts(relatedProducts, '#related-products-grid');
@@ -322,8 +337,8 @@ async function initializeProductDetailPage(productId) {
         if (productDetailLayout) productDetailLayout.innerHTML = '<h1>خطأ في تحميل المنتج. قد يكون غير موجود.</h1>';
     }
 }
+// --- نهاية التعديل ---
 
-// --- بداية: دالة جديدة لتشغيل النافذة المنبثقة ---
 function setupSizeGuideModal() {
     const openBtn = document.getElementById('open-size-guide-btn');
     const modal = document.getElementById('size-guide-modal');
@@ -346,7 +361,6 @@ function setupSizeGuideModal() {
         }
     });
 }
-// --- نهاية: دالة جديدة لتشغيل النافذة المنبثقة ---
 
 
 function setupSizeSelector(product, container) {

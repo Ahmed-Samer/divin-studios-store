@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إتمام الشراء - Xinorgt</title>
+    <title>Checkout - Xinorgt</title>
     <link rel="icon" type="image/png" href="images/favicon.png">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -13,11 +13,11 @@
         <nav class="navbar">
             <div class="nav-section right">
                 <ul class="expanded-links">
-                    <li><a href="index.html?category=رجالي">رجالي</a></li>
-                    <li><a href="index.html?category=نسائي">نسائي</a></li>
-                    <li><a href="index.html?category=اطفالي">أطفال</a></li>
-                    <li><a href="about.html">عن المتجر</a></li>
-                    <li><a href="contact.html">تواصل معنا</a></li>
+                    <li><a href="index.html?category=Men">Home</a></li>
+                    <li><a href="index.html?category=Women">Women</a></li>
+                    <li><a href="index.html?category=Kids">Kids</a></li>
+                    <li><a href="about.html">About the Store</a></li>
+                    <li><a href="contact.html">Contact Us</a></li>
                 </ul>
 <button class="menu-toggle-btn">☰</button>            </div>
             <div class="nav-section middle">
@@ -25,7 +25,7 @@
             </div>
             <div class="nav-section left">
                 <div class="search-container">
-                    <input type="search" id="search-bar" placeholder="ابحث عن منتج...">
+                    <input type="search" id="search-bar" placeholder="Search for a product...">
                 </div>
                 <button class="search-toggle-btn">🔍</button>
                 <a href="cart.html" class="cart-link">
@@ -40,40 +40,40 @@
             </div>
         </nav>
         <div class="search-overlay">
-            <input type="search" id="mobile-search-bar" placeholder="ابحث عن منتجك المفضل...">
+            <input type="search" id="mobile-search-bar" placeholder="Search for your favorite product...">
         </div>
     </header>
 
     <main class="page-content">
         <div class="checkout-page-container">
-            <h1>إتمام الشراء</h1>
+            <h1>Checkout</h1>
             <div class="checkout-layout">
                 <div class="customer-details">
-                    <h2>تفاصيل الشحن</h2>
+                    <h2>Shipping Details</h2>
                     <form class="checkout-form" id="checkout-form" novalidate>
                         <div class="form-group">
-                            <label for="full-name">الاسم بالكامل</label>
+                            <label for="full-name">Full Name</label>
                             <input type="text" id="full-name" name="full-name" >
                             <span class="error-message"></span>
                         </div>
                         <div class="form-group">
-                            <label for="phone">رقم الهاتف</label>
+                            <label for="phone">Phone Number</label>
                             <input type="tel" id="phone" name="phone" >
                             <span class="error-message"></span>
                         </div>
                         <div class="form-group">
-                            <label for="address">العنوان بالتفصيل</label>
+                            <label for="address">Full Address</label>
                             <textarea id="address" name="address" rows="4" ></textarea>
                             <span class="error-message"></span>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="governorate">المحافظة</label>
+                                <label for="governorate">Governorate</label>
                                 <input type="text" id="governorate" name="governorate" >
                                 <span class="error-message"></span>
                             </div>
                             <div class="form-group">
-                                <label for="city">المدينة</label>
+                                <label for="city">City</label>
                                 <input type="text" id="city" name="city" >
                                 <span class="error-message"></span>
                             </div>
@@ -81,36 +81,36 @@
                     </form>
                 </div>
                 <div class="order-summary">
-                    <h2>ملخص الطلب</h2>
+                    <h2>Order Summary</h2>
                     <div id="summary-items-container" class="summary-items">
                         </div>
 
                     <div class="coupon-section">
                         <div class="form-group">
-                            <label for="coupon-input">كود الخصم (إن وجد)</label>
+                            <label for="coupon-input">Discount Code (if any)</label>
                             <div class="coupon-input-group">
-                                <input type="text" id="coupon-input" placeholder="أدخل كود الخصم">
-                                <button type="button" id="apply-coupon-btn" class="btn btn-secondary">تطبيق</button>
+                                <input type="text" id="coupon-input" placeholder="Enter discount code">
+                                <button type="button" id="apply-coupon-btn" class="btn btn-secondary">Apply</button>
                             </div>
                             <span id="coupon-message" class="coupon-message"></span>
                         </div>
                     </div>
                     <div class="summary-details">
                          <div class="summary-row" id="summary-subtotal-row">
-                            <span>الإجمالي الفرعي</span>
-                            <span id="summary-subtotal-price">0 ج.م</span>
+                            <span>Subtotal</span>
+                            <span id="summary-subtotal-price">0 EGP</span>
                         </div>
                         <div class="summary-row" id="summary-discount-row" style="display: none;">
-                            <span>الخصم</span>
-                            <span id="summary-discount-amount" style="color: #2ecc71;">-0 ج.م</span>
+                            <span>Discount</span>
+                            <span id="summary-discount-amount" style="color: #2ecc71;">-0 EGP</span>
                         </div>
                         <div class="summary-total">
-                            <span>الإجمالي النهائي</span>
-                            <span id="summary-total-price">0 ج.م</span>
+                            <span>Total</span>
+                            <span id="summary-total-price">0 EGP</span>
                         </div>
                     </div>
 
-                    <button type="submit" form="checkout-form" class="confirm-order-btn">تأكيد الطلب</button>
+                    <button type="submit" form="checkout-form" class="confirm-order-btn">Confirm Order</button>
                 </div>
             </div>
         </div>
@@ -119,11 +119,11 @@
     <footer class="main-footer">
         <div class="footer-content">
             <div class="social-links">
-                <a href="#">فيسبوك</a>
-                <a href="#">انستجرام</a>
-                <a href="#">تويتر</a>
+                <a href="#">Facebook</a>
+                <a href="#">Instagram</a>
+                <a href="#">Twitter</a>
             </div>
-            <p class="copyright">&copy; 2025 Xinorgt. كل الحقوق محفوظة.</p>
+            <p class="copyright">&copy; 2025 Xinorgt. All rights reserved.</p>
         </div>
     </footer>
 

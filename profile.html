@@ -1,154 +1,0 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>حسابي - Xinorgt</title>
-    <link rel="icon" type="image/png" href="images/favicon.png">
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    
-    <header class="main-header">
-        <nav class="navbar">
-            <div class="nav-section right">
-                <ul class="expanded-links">
-                    <li><a href="index.html?category=رجالي">رجالي</a></li>
-                    <li><a href="index.html?category=نسائي">نسائي</a></li>
-                    <li><a href="index.html?category=اطفالي">أطفال</a></li>
-                    <li><a href="about.html">عن المتجر</a></li>
-                    <li><a href="contact.html">تواصل معنا</a></li>
-                    <div id="user-navigation-links-mobile"></div> 
-                </ul>
-<button class="menu-toggle-btn">☰</button>            </div>
-            <div class="nav-section middle">
-                <a href="index.html" class="logo">Xinorgt</a>
-            </div>
-            <div class="nav-section left">
-                <div id="user-actions" class="user-actions">
-                </div>
-                <a href="cart.html" class="cart-link">
-<span class="cart-icon">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M21.92,6.62a1,1,0,0,0-.79-.38H6.52L6,3.74A1,1,0,0,0,5,3H3A1,1,0,0,0,3,5H4.24L7,15.26A1,1,0,0,0,8,16H18a1,1,0,0,0,.95-.68l3-7A1,1,0,0,0,21.92,6.62ZM8.53,14,6.74,7H20.26l-2.5,5.83Z"/>
-        <circle cx="9" cy="20" r="2"/>
-        <circle cx="17" cy="20" r="2"/>
-    </svg>
-</span>                    <span class="cart-count">0</span>
-                </a>
-                 <div class="search-container">
-                    <input type="search" id="search-bar" placeholder="ابحث عن منتج...">
-                </div>
-                <button class="search-toggle-btn">🔍</button>
-            </div>
-        </nav>
-        <div class="search-overlay">
-            <input type="search" id="mobile-search-bar" placeholder="ابحث عن منتجك المفضل...">
-        </div>
-    </header>
-
-    <main class="page-content">
-        <div class="static-page-container" id="profile-page-container">
-            <h1>حسابي</h1>
-            
-            <div class="admin-section">
-                <h2>معلومات الحساب</h2>
-                <div id="user-details-content" class="info-grid">
-                    <div class="info-item">
-                        <span class="info-label">الاسم:</span>
-                        <span class="info-value" id="profile-name">جاري التحميل...</span>
-                    </div>
-                     <div class="info-item">
-                        <span class="info-label">البريد الإلكتروني:</span>
-                        <span class="info-value" id="profile-email">جاري التحميل...</span>
-                    </div>
-                </div>
-                </div>
-            
-            <div class="admin-section">
-                <h2>بيانات الشحن المحفوظة</h2>
-                <p style="font-size: 14px; color: #a8b2d1; margin-top: -15px; margin-bottom: 25px;">هذه البيانات ستُستخدم لملء فورم إتمام الشراء تلقائياً لتسهيل عملية الطلب.</p>
-                <form class="checkout-form" id="shipping-details-form">
-                    <div class="form-group">
-                        <label for="shipping-full-name">الاسم بالكامل</label>
-                        <input type="text" id="shipping-full-name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="shipping-phone">رقم الهاتف</label>
-                        <input type="tel" id="shipping-phone" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="shipping-address">العنوان بالتفصيل</label>
-                        <textarea id="shipping-address" rows="3" required></textarea>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="shipping-governorate">المحافظة</label>
-                            <input type="text" id="shipping-governorate" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="shipping-city">المدينة</label>
-                            <input type="text" id="shipping-city" required>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn" style="width: 100%;">حفظ بيانات الشحن</button>
-                </form>
-            </div>
-
-            <div class="admin-section" id="change-password-section">
-                <h2>تغيير كلمة المرور</h2>
-                <form id="change-password-form" class="checkout-form">
-                    <div class="form-group">
-                        <label for="current-password">كلمة المرور الحالية</label>
-                        <div class="password-container">
-                            <input type="password" id="current-password" required>
-                            <span class="password-toggle-icon">👁️</span>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="new-password">كلمة المرور الجديدة</label>
-                        <div class="password-container">
-                            <input type="password" id="new-password" required>
-                            <span class="password-toggle-icon">👁️</span>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="confirm-new-password">تأكيد كلمة المرور الجديدة</label>
-                        <div class="password-container">
-                            <input type="password" id="confirm-new-password" required>
-                            <span class="password-toggle-icon">👁️</span>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn" style="width: 100%;">تحديث كلمة المرور</button>
-                </form>
-            </div>
-
-            <div class="admin-section" id="google-user-message" style="display: none; text-align: center; background-color: #1c2e4a; padding: 20px; border-radius: 8px;">
-                <p style="font-size: 16px; line-height: 1.7;">أنت مسجل حاليًا بواسطة حساب جوجل، لا توجد كلمة مرور مرتبطة بحسابك على متجرنا لتغييرها.</p>
-            </div>
-
-
-            <div class="admin-section">
-                <h2>طلباتي السابقة</h2>
-                <div id="my-orders-list">
-                    <p>جاري تحميل طلباتك...</p>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <footer class="main-footer">
-        <div class="footer-content">
-            <div class="social-links">
-                <a href="#">فيسبوك</a>
-                <a href="#">انستجرام</a>
-                <a href="#">تويتر</a>
-            </div>
-            <p class="copyright">&copy; 2025 Xinorgt. كل الحقوق محفوظة.</p>
-        </div>
-    </footer>
-
-    <div id="toast-container"></div>
-    <script type="module" src="js/main.js"></script>
-</body>
-</html>

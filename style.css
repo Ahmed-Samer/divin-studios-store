@@ -150,18 +150,16 @@ h1, h2, h3, h4, h5, h6, .logo,
 }
 
 .search-container { display: block; }
-/* --- بداية التعديل --- */
 .search-container input[type="search"] { 
     font-family: 'Cairo', Arial, sans-serif;
     background-color: #f1f3f5; 
     border: 1px solid #dee2e6; 
     color: #333333; 
     padding: 8px 15px; 
-    border-radius: 20px; /* جعل الحواف دائرية بالكامل */
+    border-radius: 20px;
     width: 200px; 
     transition: all 0.3s ease; 
 }
-/* --- نهاية التعديل --- */
 .search-container input[type="search"]::placeholder { color: #868e96; }
 .search-container input[type="search"]:focus { 
     outline: none; 
@@ -181,7 +179,7 @@ h1, h2, h3, h4, h5, h6, .logo,
 .search-overlay { display: none; }
 
 
-/* --- Hero Section & Footer Story (Light Mode) --- */
+/* Hero Section & Homepage Header Styles */
 .hero-section {
     height: 100vh;
     background-image: url(https://images.pexels.com/photos/1884584/pexels-photo-1884584.jpeg);
@@ -265,7 +263,7 @@ h1, h2, h3, h4, h5, h6, .logo,
 .cart-summary h2 { text-align: center; margin-top: 0; border-bottom: 1px solid #e0e0e0; padding-bottom: 10px; }
 .summary-row { display: flex; justify-content: space-between; font-size: 18px; margin-bottom: 20px; }
 
-.checkout-btn { 
+.checkout-btn, .confirm-order-btn { 
     width: 100%; 
     display: block; 
     text-align: center; 
@@ -279,8 +277,9 @@ h1, h2, h3, h4, h5, h6, .logo,
     cursor: pointer; 
     transition: background-color 0.3s ease, color 0.3s ease; 
     text-decoration: none; 
+    box-sizing: border-box; 
 }
-.checkout-btn:hover { 
+.checkout-btn:hover, .confirm-order-btn:hover:not(:disabled) { 
     background-color: #ffffff;
     color: #1a1a1a; 
 }
@@ -365,6 +364,8 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
 .product-title-large { font-size: 48px; color: #1a1a1a; margin-top: 0; margin-bottom: 15px; border: none; }
 .product-price-large { font-size: 32px; color: #333333; margin-bottom: 25px; }
 .product-description { font-size: 16px; line-height: 1.8; margin-bottom: 30px; }
+
+/* --- بداية التعديل --- */
 .product-actions-container {
     display: flex;
     gap: 15px;
@@ -372,6 +373,31 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
     margin-top: 20px;
     flex-wrap: wrap;
 }
+#buy-now-btn {
+    font-family: 'Cairo', Arial, sans-serif;
+    padding: 15px 30px; 
+    font-size: 18px; 
+    flex-grow: 1; 
+}
+.add-to-cart-btn { 
+    font-family: 'Cairo', Arial, sans-serif;
+    background-color: #ffffff;
+    color: #1a1a1a;
+    border: 2px solid #1a1a1a;
+    padding: 15px 30px; 
+    font-size: 18px; 
+    font-weight: bold; 
+    border-radius: 4px; 
+    cursor: pointer; 
+    transition: background-color 0.3s ease, transform 0.2s ease, color 0.3s ease;
+    flex-grow: 1; 
+}
+.add-to-cart-btn:hover { 
+    background-color: #1a1a1a;
+    color: #ffffff; 
+    transform: scale(1.05); 
+}
+/* --- نهاية  --- */
 .product-options { display: flex; flex-direction: column; gap: 20px; margin-bottom: 30px; }
 .option-group { margin-bottom: 20px; }
 .option-group label { display: block; margin-bottom: 10px; font-weight: bold; font-size: 18px; }
@@ -390,19 +416,32 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
 .size-btn:hover { background-color: #f1f3f5; border-color: #1a1a1a; }
 .size-btn.active { background-color: #1a1a1a; color: #ffffff; border-color: #1a1a1a; }
 .size-btn.disabled { background-color: #e9ecef; color: #adb5bd; border-color: #dee2e6; cursor: not-allowed; text-decoration: line-through; }
+/* الزرار الأساسي (شراء الآن) */
+#buy-now-btn {
+    flex-grow: 1; /* ياخد مساحة أكبر */
+        cursor: pointer; 
+
+}
+
+/* الزرار الثانوي (أضف للسلة) */
 .add-to-cart-btn { 
     font-family: 'Cairo', Arial, sans-serif;
-    background-color: #1a1a1a; 
-    color: #ffffff; 
+    background-color: #ffffff; /* خلفية بيضاء */
+    color: #1a1a1a; /* خط أسود */
     border: 2px solid #1a1a1a;
     padding: 15px 30px; 
     font-size: 18px; 
     font-weight: bold; 
     border-radius: 4px; 
     cursor: pointer; 
-    transition: background-color 0.3s ease, transform 0.2s ease, color 0.3s ease; 
+    transition: background-color 0.3s ease, transform 0.2s ease, color 0.3s ease;
+    flex-grow: 1; /* ياخد مساحة أكبر */
 }
-.add-to-cart-btn:hover { background-color: #ffffff; color: #1a1a1a; transform: scale(1.05); }
+.add-to-cart-btn:hover { 
+    background-color: #1a1a1a; /* يعكس الألوان عند الماوس */
+    color: #ffffff; 
+    transform: scale(1.05); 
+}
 .quantity-selector { display: flex; align-items: center; gap: 10px; }
 .quantity-selector .quantity-btn { 
     background-color: #e9ecef; 
@@ -598,7 +637,12 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
     .navbar { flex-wrap: nowrap; } 
     .nav-section.middle { flex-grow: 1; text-align: center; } 
     .nav-section.right { flex-basis: 33%; justify-content: flex-start; }
-    .nav-section.left { flex-basis: 33%; justify-content: flex-end; gap: 10px; }
+    .nav-section.left { 
+        flex-basis: 33%; 
+        justify-content: flex-end; 
+        gap: 10px; 
+        align-items: center;
+    }
     .logo { font-size: 22px; } 
     .search-container { display: none; } 
     .search-toggle-btn { display: block; } 
@@ -608,7 +652,6 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
     }
     .search-overlay { position: absolute; top: 100%; left: 0; width: 100%; background-color: rgba(255,255,255,0.95); padding: 15px 5%; box-sizing: border-box; box-shadow: 0 4px 8px rgba(0,0,0,0.1); display: none; } 
     .main-header.search-active .search-overlay { display: block; } 
-    /* --- بداية التعديل --- */
     #mobile-search-bar { 
         font-family: 'Cairo', Arial, sans-serif; 
         width: 100%; 
@@ -616,10 +659,9 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
         border: 1px solid #1a1a1a; 
         color: #333333; 
         padding: 12px 15px; 
-        border-radius: 20px; /* جعل الحواف دائرية بالكامل */
+        border-radius: 20px;
         outline: none; 
     } 
-    /* --- نهاية التعديل --- */
     .product-detail-layout { grid-template-columns: 1fr; } 
     .product-title-large { font-size: 32px; } 
     .slider-btn { padding: 10px; font-size: 20px; } 
@@ -775,7 +817,7 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
     line-height: 1.7;
     color: #555555;
 }
-/* --- بداية: أكواد دليل المقاسات --- */
+/* --- أكواد دليل المقاسات --- */
 .size-guide-container {
     margin-top: -15px; 
     margin-bottom: 30px;
