@@ -147,15 +147,30 @@ export function displayCartItems(allProducts) {
 }
 
 // Display checkout summary function
+// Display checkout summary function - النسخة الجديدة
 export function displayCheckoutSummary(allProducts) {
     const summaryContainer = document.getElementById('summary-items-container');
     if (!summaryContainer) return;
+    
+    // --- بداية التعديل ---
+    const buyNowItemJSON = sessionStorage.getItem('buyNowItem');
+    let itemsToDisplay = [];
+    let isBuyNowFlow = false;
 
-    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    if (buyNowItemJSON) {
+        // لو فيه منتج شراء فوري، استخدمه هو بس
+        itemsToDisplay.push(JSON.parse(buyNowItemJSON));
+        isBuyNowFlow = true;
+    } else {
+        // لو مفيش، استخدم سلة المشتريات العادية
+        itemsToDisplay = JSON.parse(localStorage.getItem('cart')) || [];
+    }
+    // --- نهاية التعديل ---
+
     summaryContainer.innerHTML = '';
     
-    if (cart.length === 0) {
-        summaryContainer.innerHTML = '<p>No products in the cart.</p>';
+    if (itemsToDisplay.length === 0) {
+        summaryContainer.innerHTML = '<p>No products to display.</p>';
         const confirmBtn = document.querySelector('.confirm-order-btn');
         if (confirmBtn) confirmBtn.disabled = true;
         updatePriceSummary(0);
@@ -163,7 +178,7 @@ export function displayCheckoutSummary(allProducts) {
     }
 
     let subtotal = 0;
-    cart.forEach(cartItem => {
+    itemsToDisplay.forEach(cartItem => {
         const product = allProducts.find(p => p.id == cartItem.id);
         if (product) {
             subtotal += product.price * cartItem.quantity;
@@ -179,7 +194,6 @@ export function displayCheckoutSummary(allProducts) {
         applyCouponBtn.addEventListener('click', () => handleApplyCoupon(allProducts));
     }
 }
-
 // Update price summary function
 function updatePriceSummary(subtotal, discount = { amount: 0, code: null }) {
     const subtotalEl = document.getElementById('summary-subtotal-price');
@@ -317,6 +331,7 @@ function validateForm() {
 // --- End: Form validation functions ---
 
 // Submit order to server function
+// Submit order to server function - النسخة الجديدة
 export async function handleOrderSubmission(event) {
     event.preventDefault();
     if (!validateForm()) {
@@ -335,7 +350,17 @@ export async function handleOrderSubmission(event) {
         governorate: document.getElementById('governorate').value,
         city: document.getElementById('city').value,
     };
-    const cartItems = JSON.parse(localStorage.getItem('cart')) || [];
+    
+    // --- بداية التعديل ---
+    const buyNowItemJSON = sessionStorage.getItem('buyNowItem');
+    let cartItems = [];
+
+    if (buyNowItemJSON) {
+        cartItems.push(JSON.parse(buyNowItemJSON));
+    } else {
+        cartItems = JSON.parse(localStorage.getItem('cart')) || [];
+    }
+    // --- نهاية التعديل ---
 
     if (cartItems.length === 0) {
         showToast('Your cart is empty!', true);
@@ -351,16 +376,23 @@ export async function handleOrderSubmission(event) {
     };
 
     try {
-        const headers = { 'Content-Type': 'application/json' };
-        
         const response = await fetch('/api/orders', {
             method: 'POST',
-            headers: headers,
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(orderData),
         });
 
         if (response.ok) {
-            syncCart([]);
+            // --- بداية التعديل ---
+            if (buyNowItemJSON) {
+                // لو ده شراء فوري، امسح المنتج المؤقت فقط
+                sessionStorage.removeItem('buyNowItem');
+            } else {
+                // لو ده شراء من السلة، امسح السلة كلها
+                syncCart([]); 
+            }
+            // --- نهاية التعديل ---
+
             showToast('Your order has been confirmed successfully! Redirecting to home page ✔️');
             confirmBtn.textContent = 'Order Confirmed!';
             setTimeout(() => { window.location.href = 'index.html'; }, 3000);

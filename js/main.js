@@ -345,19 +345,34 @@ async function initializeProductDetailPage(productId) {
             }
             
             // برمجة زرار "شراء الآن"
-            const buyNowBtn = document.getElementById('buy-now-btn');
-            if (buyNowBtn) {
-                buyNowBtn.addEventListener('click', () => {
-                    const selectedSize = document.querySelector('.size-btn.active')?.dataset.size;
-                    const quantity = parseInt(document.getElementById('quantity-input').value);
-                    
-                    const addedSuccessfully = addToCart(product.id, quantity, selectedSize, allProducts);
-                    
-                    if (addedSuccessfully) {
-                        window.location.href = 'checkout.html';
-                    }
-                });
-            }
+const buyNowBtn = document.getElementById('buy-now-btn');
+if (buyNowBtn) {
+    buyNowBtn.addEventListener('click', () => {
+        const selectedSize = document.querySelector('.size-btn.active')?.dataset.size;
+        const quantity = parseInt(document.getElementById('quantity-input').value);
+
+        // --- بداية التعديل ---
+        // 1. نتأكد إن المستخدم اختار مقاس
+        if (!selectedSize) {
+            showToast('Please select a size first.', true);
+            return;
+        }
+
+        // 2. نعمل обект مؤقت للمنتج المطلوب
+        const itemToBuy = {
+            id: product.id,
+            quantity: quantity,
+            size: selectedSize
+        };
+        
+        // 3. نخزنه في الـ sessionStorage (ذاكرة مؤقتة)
+        sessionStorage.setItem('buyNowItem', JSON.stringify(itemToBuy));
+        
+        // 4. نوجهه لصفحة الدفع
+        window.location.href = 'checkout.html';
+        // --- نهاية التعديل ---
+    });
+}
 
             setupSizeGuideModal();
 
