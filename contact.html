@@ -13,7 +13,8 @@
     <nav class="navbar">
         <div class="nav-section right">
             <ul class="expanded-links">
-                <li><a href="index.html?category=Men">Home</a></li>
+                <li><a href="index.html">Home</a>
+</li>
                 <li><a href="about.html">About Store</a></li>
                 <li><a href="contact.html">Contact Us</a></li>
             </ul>
@@ -48,18 +49,30 @@
     <main class="page-content">
         <div class="static-page-container">
             <h1>Contact Us</h1>
-            <div class="contact-info">
-                <h2>Contact Information</h2>
-                <p>We are always happy to hear your opinions and inquiries. You can reach us through the following channels:</p>
-                <ul>
-                    <li><strong>Email:</strong> <a href="mailto:ahmednewahmed829@gmail.com">MohamedIbrahem@gmail.com</a></li>
-                    <li><strong>Phone:</strong> <a href="tel:+201226399207">+201272528717</a></li>
-                    <li><strong>Address:</strong> Tanta, Gharbia Governorate, Egypt</li>
-                </ul>
-                <p>Working Hours: All week long.</p>
-            </div>
+<div class="contact-form-container" style="margin-top: 50px;">
+    <h2 style="text-align: center; border: none;">Send us a direct message</h2>
+    <form id="contact-form" class="checkout-form">
+        <input type="text" name="contact_number" style="display: none;">
+
+        <div class="form-group">
+            <input type="text" id="from_name" name="from_name" required placeholder="Full Name">
         </div>
-    </main>
+
+        <div class="form-group">
+            <input type="email" id="from_email" name="from_email" required placeholder="Email Address">
+        </div>
+
+        <div class="form-group">
+            <input type="tel" id="from_phone" name="from_phone" required placeholder="Phone Number">
+        </div>
+
+        <div class="form-group">
+            <textarea id="message" name="message" rows="5" required placeholder="Your Message..."></textarea>
+        </div>
+
+        <button type="submit" id="contact-submit-btn" class="btn" style="width: 100%;">Send Message</button>
+    </form>
+</div>    </main>
 
     <footer class="main-footer">
         <div class="footer-content">
@@ -72,7 +85,10 @@
         </div>
     </footer>
     
-    <div id="toast-container"></div>
-    <script type="module" src="js/main.js"></script>
-    </body>
+<div id="toast-container"></div>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<script type="module" src="js/main.js"></script>
+</body>
 </html>

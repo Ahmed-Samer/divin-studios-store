@@ -881,3 +881,74 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
     font-family: 'Cormorant Garamond', serif;
     font-size: 18px;
 }
+/* --- بداية: أكواد تصميم فورم التواصل الجديدة --- */
+
+/* 1. الحاوية الرئيسية للفورم */
+.contact-form-container {
+    max-width: 550px; /* بنصغر أقصى عرض للفورم عشان ميكونش طويل أوي */
+    margin: 60px auto; /* بنحط الفورم في نص الصفحة مع مسافة من فوق وتحت */
+    padding: 40px; /* مسافة داخلية مريحة للعين */
+    background-color: #ffffff; /* خلفية بيضاء ونظيفة */
+    border-radius: 15px; /* حواف دائرية زي ما طلبت */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08); /* ظل خفيف وناعم */
+    border: 1px solid #e9ecef;
+}
+
+.contact-form-container h2 {
+    text-align: center;
+    border: none;
+    margin-bottom: 30px;
+    font-size: 28px; /* بنكبر العنوان الرئيسي شوية */
+    color: #343a40;
+}
+
+/* 2. الحقول نفسها (Inputs & Textarea) */
+.contact-form-container .form-group input,
+.contact-form-container .form-group textarea {
+    width: 100%;
+    border: 1px solid #ced4da;
+    background-color: #f8f9fa; /* لون رمادي فاتح جدًا للحقل */
+    padding: 15px;
+    border-radius: 10px; /* حواف دائرية للحقول */
+    font-size: 16px;
+    color: #495057;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease; /* حركة ناعمة */
+}
+
+/* بنغير شكل الـ placeholder نفسه */
+.contact-form-container .form-group ::placeholder {
+    color: #999;
+    font-family: 'Cairo', sans-serif;
+}
+
+/* دي بقى من الحاجات الحلوة: لما المستخدم يضغط على الحقل */
+.contact-form-container .form-group input:focus,
+.contact-form-container .form-group textarea:focus {
+    outline: none; /* بنشيل الخط الأزرق اللي بيظهر تلقائي */
+    border-color: #1a1a1a; /* لون الحدود بيتغير للأسود */
+    box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1); /* بنضيف ظل خفيف حوالين الحقل */
+    background-color: #fff;
+}
+
+.contact-form-container .form-group textarea {
+    resize: vertical; /* بنسمح للمستخدم يكبر مربع الرسالة بالطول بس */
+    min-height: 130px;
+}
+
+/* 3. زر الإرسال (Send Message Button) */
+#contact-submit-btn {
+    border-radius: 10px; /* نفس درجة دائرية الحقول */
+    padding: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 0.5px; /* مسافة بسيطة بين الحروف */
+    transition: all 0.3s ease; /* حركة ناعمة لكل حاجة */
+}
+
+/* حركة بسيطة لما الماوس يجي على الزرار */
+#contact-submit-btn:hover:not(:disabled) {
+    transform: translateY(-3px); /* الزرار بيترفع لفوق شوية */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12); /* الظل بتاعه بيزيد */
+}
+
+/* --- نهاية: أكواد تصميم فورم التواصل الجديدة --- */

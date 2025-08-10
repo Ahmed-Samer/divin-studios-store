@@ -190,6 +190,27 @@ app.post('/api/coupons/verify', async (req, res) => {
     }
 });
 
+// --- بداية: Endpoint آمن لجلب مفاتيح EmailJS ---
+app.get('/api/emailjs-keys', (req, res) => {
+    try {
+        const keys = {
+            serviceId: process.env.EMAILJS_SERVICE_ID,
+            templateId: process.env.EMAILJS_TEMPLATE_ID,
+            publicKey: process.env.EMAILJS_PUBLIC_KEY
+        };
+
+        // نتأكد إن كل المفاتيح موجودة في ملف .env
+        if (!keys.serviceId || !keys.templateId || !keys.publicKey) {
+            throw new Error('لم يتم تعيين مفاتيح EmailJS على السيرفر.');
+        }
+
+        res.json(keys);
+    } catch (error) {
+        console.error("خطأ في جلب مفاتيح EmailJS:", error.message);
+        res.status(500).json({ message: 'خطأ في إعدادات السيرفر.' });
+    }
+});
+// --- نهاية: Endpoint آمن لجلب مفاتيح EmailJS ---
 
 // --- Products API ---
 // المسارات العامة التي لا تحتاج حماية

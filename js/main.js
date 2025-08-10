@@ -210,15 +210,51 @@ function runPageSpecificLogic() {
 }
 
 
-function initializeContactForm() {
+async function initializeContactForm() {
     const contactForm = document.getElementById('contact-form');
     if (!contactForm) return;
 
-    contactForm.addEventListener('submit', async function(event) {
-        event.preventDefault();
-        showToast('تم إرسال الرسالة (محاكاة).');
-        contactForm.reset();
-    });
+    try {
+        // 1. نطلب المفاتيح من السيرفر بتاعنا الأول
+        const response = await fetch('/api/emailjs-keys');
+        if (!response.ok) {
+            throw new Error('فشل في تحميل إعدادات الإرسال من السيرفر.');
+        }
+        const keys = await response.json();
+
+        // 2. نهيئ خدمة EmailJS باستخدام المفاتيح اللي جبناها
+        emailjs.init({
+            publicKey: keys.publicKey,
+        });
+
+        // 3. نضيف الـ Event Listener بعد ما نتأكد إن كل حاجة جاهزة
+        contactForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const submitBtn = document.getElementById('contact-submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'جاري الإرسال...';
+
+            // 4. نستخدم الـ Service ID والـ Template ID من المفاتيح
+            emailjs.sendForm(keys.serviceId, keys.templateId, this)
+                .then(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'إرسال الرسالة';
+                    showToast('تم إرسال رسالتك بنجاح! ✔️');
+                    contactForm.reset();
+                }, (err) => {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'إرسال الرسالة';
+                    showToast('حدث خطأ أثناء الإرسال. حاول مرة أخرى.', true);
+                    console.error('EmailJS Error:', JSON.stringify(err));
+                });
+        });
+
+    } catch (error) {
+        showToast(error.message, true);
+        console.error(error);
+        // لو فشل تحميل المفاتيح، نعطل الفورم خالص
+        contactForm.innerHTML = '<p style="color: #e74c3c; text-align: center;">خدمة إرسال الرسائل غير متاحة حاليًا.</p>';
+    }
 }
 
 function renderProducts(productsToRender, containerSelector = '.product-grid') {
