@@ -1,5 +1,13 @@
 /* --- بداية: استيراد الخطوط الجديدة من جوجل --- */
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Cormorant+Garamond:wght@700&display=swap');
+/* --- بداية: تعريف الخط المحلي الجديد (للتجربة) --- */
+@font-face {
+    font-family: 'Pacifico';
+    src: url('fonts/Pacifico-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+/* --- نهاية: تعريف الخط المحلي الجديد --- */
 
 /* --- إعدادات عامة --- */
 body { 
@@ -10,7 +18,7 @@ body {
 }
 
 /* --- تطبيق خط العناوين المميز --- */
-h1, h2, h3, h4, h5, h6, .logo, 
+h1, h2, h3, h4, h5, h6, 
 .product-price, .product-price-large, .cart-item-price,
 .summary-row span:last-child {
     font-family: 'Cormorant Garamond', serif;
@@ -34,11 +42,14 @@ h1, h2, h3, h4, h5, h6, .logo,
 .nav-section.middle { flex: 0 1 auto; }
 .nav-section.left { flex: 1; justify-content: flex-end; gap: 15px; }
 .logo { 
-    font-size: 32px; 
+    font-family: 'Pacifico', cursive; /*  */
+    font-size: 32px; /*  */
+    font-weight: normal;
     text-decoration: none; 
     color: #1a1a1a; 
     transition: color 0.3s ease; 
-    white-space: nowrap; 
+    white-space: nowrap;
+    padding-top: 5px;
 }
 .logo:hover { color: #555555; }
 
@@ -149,20 +160,68 @@ h1, h2, h3, h4, h5, h6, .logo,
     height: 100%;
     fill: #333333;
     transition: fill 0.3s ease;
-    margin-top:9.1px;
+    margin-top:3.5px;
 }
 
-.search-container { display: block; }
+/* --- بداية التعديل --- */
+.search-container { 
+    display: block;
+    position: relative; /* ضروري عشان نربط الأيقونة بيه */
+}
+
+.search-container::before {
+    content: '';
+    position: absolute;
+    left: 15px; /* المسافة من الشمال */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px; /* حجم الأيقونة */
+    height: 18px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'%3E%3Cpath fill='%23868e96' d='M 21 3 C 11.622998 3 4 10.623005 4 20 C 4 29.376995 11.622998 37 21 37 C 24.712383 37 28.139151 35.791079 30.9375 33.765625 L 44.085938 46.914062 L 46.914062 44.085938 L 33.886719 31.058594 C 36.443536 28.083 38 24.223631 38 20 C 38 10.623005 30.377002 3 21 3 z M 21 5 C 29.296122 5 36 11.703883 36 20 C 36 28.296117 29.296122 35 21 35 C 12.703878 35 6 28.296117 6 20 C 6 11.703883 12.703878 5 21 5 z'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0.6;
+    z-index: 1;
+}
+
 .search-container input[type="search"] { 
     font-family: 'Cairo', Arial, sans-serif;
     background-color: #f1f3f5; 
     border: 1px solid #dee2e6; 
     color: #333333; 
-    padding: 8px 15px; 
+    padding: 8px 15px 8px 40px; /* إضافة مسافة على الشمال للأيقونة */
     border-radius: 20px;
     width: 200px; 
     transition: all 0.3s ease; 
 }
+
+.search-toggle-btn { 
+    display: none; 
+    background: none; 
+    border: none; 
+    color: #333333; 
+    font-size: 20px;
+    cursor: pointer; 
+    transition: color 0.3s ease;
+    padding: 0; /* لضمان توسط الأيقونة */
+}
+
+.search-toggle-btn svg {
+    width: 22px; /* تحديد حجم الأيقونة */
+    height: 22px;
+    fill: #333333; /* تحديد لون الأيقونة */
+    transition: fill 0.3s ease;
+}
+
+.homepage .main-header .search-toggle-btn svg {
+    fill: #ffffff;
+}
+
+.main-header.header-scrolled .search-toggle-btn svg {
+    fill: #333333;
+}
+/* --- نهاية التعديل --- */
+
 .search-container input[type="search"]::placeholder { color: #868e96; }
 .search-container input[type="search"]:focus { 
     outline: none; 
@@ -661,10 +720,11 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
 }
 
 @media (max-width: 500px) {
-    .product-grid { 
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
+.product-grid { 
+    grid-template-columns: 1fr;
+    gap: 15px;
+    padding: 0 10%; /* <<< هذا هو السطر المضاف */
+}
     .page-content { padding: 20px 3%; }
     .cart-item { flex-direction: column; align-items: center; text-align: center; }
     .cart-item-price { margin: 10px 0; }
