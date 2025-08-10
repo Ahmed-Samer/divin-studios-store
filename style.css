@@ -952,3 +952,20 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
 }
 
 /* --- نهاية: أكواد تصميم فورم التواصل الجديدة --- */
+/* --- بداية: أكواد تصغير وتدوير زراير الشراء على الموبايل --- */
+
+@media (max-width: 576px) {
+  
+    /*
+      الكود ده هيشتغل على الزرارين بس
+      من غير ما يغير أماكنهم أو يخليهم تحت بعض.
+    */
+    .product-actions-container .add-to-cart-btn,
+    .product-actions-container #buy-now-btn {
+        font-size: 14px;      /* صغرنا حجم الخط */
+        padding: 12px 18px;   /* صغرنا الـ padding عشان حجم الزرار يقل */
+        border-radius: 30px;  /* زودنا دائرية الحواف جدًا عشان ياخد الشكل الدائري */
+    }
+}
+
+/* --- نهاية: الأكواد --- */
