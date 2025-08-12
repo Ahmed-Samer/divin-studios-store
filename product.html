@@ -6,6 +6,8 @@
     <title>Product Details - Divin Studios</title>
     <link rel="icon" type="image/png" href="images/favicon1.png">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
 </head>
 <body>
     
@@ -52,11 +54,19 @@
     <main class="page-content">
         <div class="product-detail-container">
             <div class="product-detail-layout">
-                <div class="product-image-gallery">
-                    <div class="slider-wrapper"></div>
-                    <button class="slider-btn prev">&#10094;</button>
-                    <button class="slider-btn next">&#10095;</button>
-                </div>
+<div class="product-image-gallery">
+    <div style="--swiper-navigation-color: #000; --swiper-pagination-color: #000" class="swiper main-image-swiper">
+        <div class="swiper-wrapper" id="main-product-images">
+            </div>
+        <div class="swiper-button-next"></div>
+        <div class="swiper-button-prev"></div>
+    </div>
+
+    <div thumbsSlider="" class="swiper thumbnail-swiper">
+        <div class="swiper-wrapper" id="thumbnail-product-images">
+            </div>
+    </div>
+</div>
                 <div class="product-info-container">
                     <h1 class="product-title-large">Loading product...</h1>
                     <p class="product-price-large">...</p>
@@ -148,6 +158,8 @@
     </div>
 </div>
     <div id="toast-container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
 <script type="module" src="js/main.js"></script>
 
 </body>

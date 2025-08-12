@@ -215,26 +215,22 @@ async function initializeContactForm() {
     if (!contactForm) return;
 
     try {
-        // 1. نطلب المفاتيح من السيرفر بتاعنا الأول
         const response = await fetch('/api/emailjs-keys');
         if (!response.ok) {
             throw new Error('فشل في تحميل إعدادات الإرسال من السيرفر.');
         }
         const keys = await response.json();
 
-        // 2. نهيئ خدمة EmailJS باستخدام المفاتيح اللي جبناها
         emailjs.init({
             publicKey: keys.publicKey,
         });
 
-        // 3. نضيف الـ Event Listener بعد ما نتأكد إن كل حاجة جاهزة
         contactForm.addEventListener('submit', function(event) {
             event.preventDefault();
             const submitBtn = document.getElementById('contact-submit-btn');
             submitBtn.disabled = true;
             submitBtn.textContent = 'جاري الإرسال...';
 
-            // 4. نستخدم الـ Service ID والـ Template ID من المفاتيح
             emailjs.sendForm(keys.serviceId, keys.templateId, this)
                 .then(() => {
                     submitBtn.disabled = false;
@@ -252,7 +248,6 @@ async function initializeContactForm() {
     } catch (error) {
         showToast(error.message, true);
         console.error(error);
-        // لو فشل تحميل المفاتيح، نعطل الفورم خالص
         contactForm.innerHTML = '<p style="color: #e74c3c; text-align: center;">خدمة إرسال الرسائل غير متاحة حاليًا.</p>';
     }
 }
@@ -281,7 +276,7 @@ function renderProducts(productsToRender, containerSelector = '.product-grid') {
                 </a>
                 <div class="card-content">
                     <h3 class="product-name">${product.name}</h3>
-                    <p class="product-price">${product.price} ج.م</p>
+                    <p class="product-price">${product.price} EGP</p>
                     <a href="product.html?id=${product.id}" class="btn">Shop Now</a>
                 </div>
             </div>
@@ -310,7 +305,6 @@ function initializeHomePage(urlParams) {
     });
 }
 
-// --- بداية التعديل ---
 async function initializeProductDetailPage(productId) {
     const productDetailLayout = document.querySelector('.product-detail-layout');
     try {
@@ -321,20 +315,36 @@ async function initializeProductDetailPage(productId) {
 
         if (product) {
             document.querySelector('.product-title-large').textContent = product.name;
-            document.querySelector('.product-price-large').textContent = `${product.price} ج.م`;
+            document.querySelector('.product-price-large').textContent = `${product.price} EGP`;
             document.querySelector('.product-description').innerHTML = product.description;
-            document.title = `${product.name} - Zantiva Store`;
+            document.title = `${product.name} - Divin Studios`;
 
-            const sliderWrapper = document.querySelector('.slider-wrapper');
-            sliderWrapper.innerHTML = product.images.map(imgSrc => 
-                `<div class="slide"><img src="${imgSrc}" alt="${product.name}"></div>`
-            ).join('');
-            setupImageSlider(sliderWrapper);
+            const mainImagesContainer = document.getElementById('main-product-images');
+            const thumbImagesContainer = document.getElementById('thumbnail-product-images');
+
+            let mainImagesHTML = '';
+            let thumbImagesHTML = '';
+
+            product.images.forEach(imgSrc => {
+                mainImagesHTML += `
+                    <div class="swiper-slide">
+                        <img src="${imgSrc}" alt="${product.name}" />
+                    </div>`;
+                
+                thumbImagesHTML += `
+                    <div class="swiper-slide">
+                        <img src="${imgSrc}" alt="${product.name} thumbnail" />
+                    </div>`;
+            });
+
+            mainImagesContainer.innerHTML = mainImagesHTML;
+            thumbImagesContainer.innerHTML = thumbImagesHTML;
+
+            setupImageSlider();
 
             setupSizeSelector(product, document.querySelector('.size-selector'));
             setupQuantitySelector();
 
-            // برمجة زرار "أضف إلى السلة"
             const addToCartButton = document.querySelector('.add-to-cart-btn');
             if (addToCartButton) {
                 addToCartButton.addEventListener('click', () => {
@@ -344,39 +354,50 @@ async function initializeProductDetailPage(productId) {
                 });
             }
             
-            // برمجة زرار "شراء الآن"
 const buyNowBtn = document.getElementById('buy-now-btn');
 if (buyNowBtn) {
     buyNowBtn.addEventListener('click', () => {
         const selectedSize = document.querySelector('.size-btn.active')?.dataset.size;
         const quantity = parseInt(document.getElementById('quantity-input').value);
 
-        // --- بداية التعديل ---
-        // 1. نتأكد إن المستخدم اختار مقاس
         if (!selectedSize) {
             showToast('Please select a size first.', true);
             return;
         }
 
-        // 2. نعمل обект مؤقت للمنتج المطلوب
+        // --- بداية الإضافة: كود التحقق من المخزون ---
+        // 1. بنجيب تفاصيل المقاس المختار من بيانات المنتج
+        const sizeVariant = product.sizes.find(s => s.name === selectedSize);
+
+        // 2. نتأكد إن المقاس موجود (خطوة أمان إضافية)
+        if (!sizeVariant) {
+            showToast('An error occurred with the selected size.', true);
+            return;
+        }
+
+        // 3. نقارن الكمية المطلوبة بالمخزون المتاح
+        if (quantity > sizeVariant.stock) {
+            showToast(`Sorry, only ${sizeVariant.stock} piece(s) available in stock.`, true);
+            return; // بنوقف التنفيذ ومش بنكمل لصفحة الدفع
+        }
+        // --- نهاية الإضافة ---
+
         const itemToBuy = {
             id: product.id,
             quantity: quantity,
             size: selectedSize
         };
         
-        // 3. نخزنه في الـ sessionStorage (ذاكرة مؤقتة)
         sessionStorage.setItem('buyNowItem', JSON.stringify(itemToBuy));
         
-        // 4. نوجهه لصفحة الدفع
         window.location.href = 'checkout.html';
-        // --- نهاية التعديل ---
     });
 }
-
             setupSizeGuideModal();
 
             if (relatedProducts && relatedProducts.length > 0) {
+                const relatedSection = document.querySelector('.related-products-section');
+                if(relatedSection) relatedSection.style.display = 'block';
                 renderProducts(relatedProducts, '#related-products-grid');
             } else {
                 const relatedSection = document.querySelector('.related-products-section');
@@ -388,7 +409,6 @@ if (buyNowBtn) {
         if (productDetailLayout) productDetailLayout.innerHTML = '<h1>خطأ في تحميل المنتج. قد يكون غير موجود.</h1>';
     }
 }
-// --- نهاية التعديل ---
 
 function setupSizeGuideModal() {
     const openBtn = document.getElementById('open-size-guide-btn');
@@ -438,7 +458,7 @@ function setupSizeSelector(product, container) {
             });
         });
     } else {
-        container.innerHTML = '<p>لا توجد مقاسات متاحة حالياً</p>';
+        container.innerHTML = '<p>No sizes available currently</p>';
         if (addToCartButton) addToCartButton.style.display = 'none';
     }
 }
@@ -461,41 +481,22 @@ function setupQuantitySelector() {
     });
 }
 
-function setupImageSlider(sliderWrapper) {
-    let currentIndex = 0;
-    const slides = sliderWrapper.children; 
-    const totalSlides = slides.length;
-    const nextBtn = document.querySelector('.slider-btn.next');
-    const prevBtn = document.querySelector('.slider-btn.prev');
-
-    if (totalSlides <= 1) {
-        if(nextBtn) nextBtn.style.display = 'none';
-        if(prevBtn) prevBtn.style.display = 'none';
-        if (slides.length > 0) slides[0].classList.add('active-slide');
-        return;
-    }
-    
-    if(nextBtn) nextBtn.style.display = 'block'; 
-    if(prevBtn) prevBtn.style.display = 'block';
-
-    function showSlide(index) {
-        for (let slide of slides) {
-            slide.classList.remove('active-slide');
-        }
-        if (slides[index]) {
-            slides[index].classList.add('active-slide');
-        }
-    }
-
-    showSlide(currentIndex);
-
-    if(nextBtn) nextBtn.addEventListener('click', () => {
-        currentIndex = (currentIndex + 1) % totalSlides;
-        showSlide(currentIndex);
+function setupImageSlider() {
+    const thumbnailSwiper = new Swiper(".thumbnail-swiper", {
+        spaceBetween: 10,
+        slidesPerView: 4,
+        freeMode: true,
+        watchSlidesProgress: true,
     });
 
-    if(prevBtn) prevBtn.addEventListener('click', () => {
-        currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
-        showSlide(currentIndex);
+    const mainImageSwiper = new Swiper(".main-image-swiper", {
+        spaceBetween: 10,
+        navigation: {
+            nextEl: ".swiper-button-next",
+            prevEl: ".swiper-button-prev",
+        },
+        thumbs: {
+            swiper: thumbnailSwiper,
+        },
     });
 }

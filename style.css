@@ -490,21 +490,6 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
     width: 100%; 
     overflow: hidden; 
     border-radius: 8px; 
-    aspect-ratio: 1 / 1; 
-}
-.slider-wrapper { 
-    width: 100%;
-    height: 100%;
-}
-.slide {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    transition: opacity 0.4s ease-in-out;
-    z-index: 1;
 }
 .slide.active-slide {
     opacity: 1;
@@ -515,22 +500,7 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
     height: 100%; 
     object-fit: cover; 
 }
-.slider-btn { 
-    position: absolute; 
-    top: 50%; 
-    transform: translateY(-50%); 
-    background-color: rgba(255, 255, 255, 0.5); 
-    color: #1a1a1a; 
-    border: none; 
-    cursor: pointer; 
-    padding: 15px; 
-    font-size: 24px; 
-    z-index: 3;
-    transition: background-color 0.3s ease; 
-}
 .slider-btn:hover { background-color: rgba(255, 255, 255, 0.8); }
-.slider-btn.prev { left: 10px; border-radius: 50% 0 0 50%; }
-.slider-btn.next { right: 10px; border-radius: 0 50% 50% 0; }
 .related-products-section h2 { font-size: 28px; color: #1a1a1a; margin-top: 60px; margin-bottom: 20px; border-bottom: 1px solid #e0e0e0; padding-bottom: 10px; } 
 
 /* --- تصميم الإشعارات (Toast Notifications) --- */
@@ -969,3 +939,95 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
 }
 
 /* --- نهاية: الأكواد --- */
+/* --- بداية: أكواد تنسيق معرض الصور الجديد (SwiperJS) --- */
+
+/* --- بداية: أكواد تنسيق معرض الصور الجديد (SwiperJS) --- */
+
+.product-image-gallery { 
+    position: relative; 
+    width: 100%; 
+    overflow: hidden; 
+    border-radius: 8px; 
+}
+
+/* تنسيق السلايدر الرئيسي */
+.main-image-swiper {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1; /* بنحافظ على شكل الصورة المربع */
+    margin-bottom: 10px;
+    border-radius: 8px; /* لمسة جمالية للحواف */
+    overflow: hidden;
+}
+
+.main-image-swiper .swiper-slide {
+    text-align: center;
+    font-size: 18px;
+    background: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.main-image-swiper .swiper-slide img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* تنسيق الأسهم الجديدة */
+.main-image-swiper .swiper-button-next,
+.main-image-swiper .swiper-button-prev {
+    color: #fff !important; /* لون السهم أبيض */
+    background-color: rgba(0, 0, 0, 0.3); /* خلفية داكنة شفافة */
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+}
+.main-image-swiper .swiper-button-next:hover,
+.main-image-swiper .swiper-button-prev:hover {
+    background-color: rgba(0, 0, 0, 0.6);
+}
+.main-image-swiper .swiper-button-next::after,
+.main-image-swiper .swiper-button-prev::after {
+    font-size: 18px !important; /* تصغير حجم أيقونة السهم */
+    font-weight: bold;
+}
+
+/* --- بداية التعديل المهم هنا --- */
+/* تنسيق سلايدر الصور المصغرة */
+.thumbnail-swiper {
+    height: 45px; /* بنديله ارتفاع ثابت وواضح بالبيكسل  */
+    box-sizing: border-box;
+    padding: 5px 0;
+}
+/* --- نهاية التعديل المهم هنا --- */
+
+.thumbnail-swiper .swiper-slide {
+    width: 25%;
+    height: 100%;
+    opacity: 0.5; /* الصور غير النشطة تكون باهتة */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 2px solid transparent; /* بنضيف إطار شفاف */
+}
+
+.thumbnail-swiper .swiper-slide:hover {
+    opacity: 0.8;
+}
+
+.thumbnail-swiper .swiper-slide-thumb-active {
+    opacity: 1; /* الصورة النشطة تكون واضحة */
+    border-color: #1a1a1a; /* الإطار بيتلون لما الصورة تكون نشطة */
+}
+
+.thumbnail-swiper .swiper-slide img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* <<< الحل هنا */
+}

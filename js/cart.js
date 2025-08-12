@@ -332,6 +332,7 @@ function validateForm() {
 
 // Submit order to server function
 // Submit order to server function - النسخة الجديدة
+// استبدل الدالة كلها بهذه النسخة في ملف cart.js
 export async function handleOrderSubmission(event) {
     event.preventDefault();
     if (!validateForm()) {
@@ -351,7 +352,6 @@ export async function handleOrderSubmission(event) {
         city: document.getElementById('city').value,
     };
     
-    // --- بداية التعديل ---
     const buyNowItemJSON = sessionStorage.getItem('buyNowItem');
     let cartItems = [];
 
@@ -360,7 +360,6 @@ export async function handleOrderSubmission(event) {
     } else {
         cartItems = JSON.parse(localStorage.getItem('cart')) || [];
     }
-    // --- نهاية التعديل ---
 
     if (cartItems.length === 0) {
         showToast('Your cart is empty!', true);
@@ -383,15 +382,29 @@ export async function handleOrderSubmission(event) {
         });
 
         if (response.ok) {
-            // --- بداية التعديل ---
             if (buyNowItemJSON) {
-                // لو ده شراء فوري، امسح المنتج المؤقت فقط
+                // --- بداية التعديل المهم ---
+                // 1. بناخد بيانات المنتج اللي تم شراؤه فوريًا
+                const purchasedItem = JSON.parse(buyNowItemJSON);
+                const purchasedProductId = purchasedItem.id;
+
+                // 2. بنجيب السلة الأساسية من الـ localStorage
+                let mainCart = JSON.parse(localStorage.getItem('cart')) || [];
+
+                // 3. بنفلتر السلة الأساسية ونشيل منها أي منتج له نفس الـ ID
+                const updatedMainCart = mainCart.filter(item => item.id !== purchasedProductId);
+
+                // 4. بنحفظ السلة الأساسية بعد تنظيفها
+                syncCart(updatedMainCart);
+
+                // 5. بنمسح المنتج المؤقت بتاع "شراء الآن"
                 sessionStorage.removeItem('buyNowItem');
+                // --- نهاية التعديل المهم ---
+
             } else {
-                // لو ده شراء من السلة، امسح السلة كلها
+                // لو ده شراء من السلة، امسح السلة كلها (ده زي ما كان)
                 syncCart([]); 
             }
-            // --- نهاية التعديل ---
 
             showToast('Your order has been confirmed successfully! Redirecting to home page ✔️');
             confirmBtn.textContent = 'Order Confirmed!';
