@@ -770,7 +770,19 @@ footer.main-footer { background-color: #f8f9fa; color: #555555; padding: 30px 5%
 .status-update-form { display: flex; align-items: center; gap: 15px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; margin-top: 25px; }
 .status-update-form label { font-weight: bold; font-size: 16px; color: #333; }
 .status-update-form select { font-family: 'Cairo', Arial, sans-serif; flex-grow: 1; background-color: #ffffff; border: 1px solid #ced4da; color: #333; padding: 10px; border-radius: 4px; font-size: 16px; }
-.out-of-stock-badge { position: absolute; top: 10px; right: 10px; background-color: rgba(220, 53, 69, 0.9); color: white; padding: 5px 10px; font-size: 14px; font-weight: bold; border-radius: 4px; z-index: 10; }
+.out-of-stock-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(26, 26, 26, 0.9); /* لون أسود شبه شفاف واحترافي */
+    color: white;
+    padding: 6px 12px; /* تعديل بسيط للمسافات */
+    font-size: 12px; /* تصغير الخط قليلاً ليتناسب مع الشكل الجديد */
+    font-weight: bold;
+    border-radius: 20px; /* درجة دائرية عالية لعمل شكل الكبسولة */
+    z-index: 10;
+    letter-spacing: 0.5px; /* مسافة بسيطة بين الحروف لشكل أفضل */
+}
 .product-card.out-of-stock img { filter: grayscale(80%); }
 #sizes-stock-container { display: flex; flex-direction: column; gap: 15px; padding: 15px; background-color: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 4px; }
 .size-stock-row { display: flex; align-items: center; gap: 10px; }

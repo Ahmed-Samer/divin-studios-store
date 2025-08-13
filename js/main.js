@@ -264,7 +264,7 @@ function renderProducts(productsToRender, containerSelector = '.product-grid') {
 
     productsToRender.forEach(product => {
         const totalStock = product.sizes.reduce((acc, size) => acc + size.stock, 0);
-        const outOfStockBadge = totalStock === 0 ? '<div class="out-of-stock-badge">نفذت الكمية</div>' : '';
+        const outOfStockBadge = totalStock === 0 ? '<div class="out-of-stock-badge">Sold out</div>' : '';
 
         const cardHTML = `
             <div class="product-card ${totalStock === 0 ? 'out-of-stock' : ''}">
