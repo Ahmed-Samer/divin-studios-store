@@ -44,15 +44,14 @@ h1, h2, h3, h4, h5, h6,
 .logo { 
     font-family: 'Pacifico', cursive; /*  */
     font-size: 23px; /*  */
+    font-weight: normal;
     text-decoration: none; 
     color: #1a1a1a; 
-    
     transition: color 0.3s ease; 
     white-space: nowrap;
     padding-top: 5px;
 }
 .logo:hover { color: #555555; }
-
 .menu-toggle-btn { 
     background-color: #f1f3f5; 
     color: #333333; 
